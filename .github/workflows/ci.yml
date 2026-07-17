@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # npm workspaces (root package.json) - one install covers both
+      # frontend and pipeline. package-lock.json is deleted first: it only
+      # records the optional native rolldown binding for whatever OS last
+      # ran `npm install` locally (macOS, for this repo), and npm has a
+      # long-standing bug (npm/cli#4828) where even a plain `npm install`
+      # won't backfill a missing platform's binding from an existing
+      # lockfile - only a from-scratch resolve does. Deleting it here only
+      # affects this ephemeral checkout, not the committed lockfile.
+      - name: Install dependencies
+        run: rm -f package-lock.json && npm install
+
+      - name: Copy env example for build
+        run: cp config/.env.example config/.env
+
+      # StyleguideView.vue references frontend/public/logo/icon-mono.svg,
+      # which - like the rest of frontend/public/logo/ and /icons/ - is
+      # deployment-generated (make icons), not committed to the framework.
+      # A checkout without it fails the build outright (an unresolved
+      # asset import, not just a broken <img> at runtime), so CI generates
+      # it the same way `make install` does for local dev.
+      - name: Generate icons
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin
+          make icons
+
+      - name: Typecheck
+        run: cd frontend && npm run typecheck
+
+      - name: Build
+        run: cd frontend && npm run build
+
+  pipeline-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Check pipeline scripts compile
+        run: python -m compileall pipeline/ -q

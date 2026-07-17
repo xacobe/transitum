@@ -1,0 +1,13 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R_SOTRACO_3,SOTRACO,3,Terminus Goundi - Gare routière,3
+R_SOTRACO_5,SOTRACO,5,Route de Réo - Terminus Site Granite,3
+R_SOTRACO_1B,SOTRACO,1B,Cité des forces vives - Terminus central,3
+R_SOTRACO_1,SOTRACO,1,Cité des forces vives - Terminus central,3
+R_SOTRACO_7,SOTRACO,7,Terminus Site Granite - Terminus central,3
+R_SOTRACO_6,SOTRACO,6,Lycée Wendsongda - Terminus central,3
+R_SOTRACO_Reo,SOTRACO,Reo,Hôtel de ville de Réo - Gare routière,3
+R_SOTRACO_LIC_Sabou,SOTRACO,LIC Sabou,place de la Nation - Terminus sabou,3
+R_SOTRACO_L7,SOTRACO,L7,Terminus université Norbert ZONGO - Terminus Site Granite,3
+R_SOTRACO_LIC_Réo,SOTRACO,LIC Réo,place de la Nation - Marché de Réo,3
+R_SOTRACO_LIC_Ramongo,SOTRACO,LIC Ramongo,Terminus Central - Mairie,3
+R_SOTRACO_LIC_Tenado,SOTRACO,LIC Tenado,Place de la Nation - Marché de Tenado,3

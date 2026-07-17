@@ -1,0 +1,8 @@
+{
+  "name": "transitum",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "pipeline"
+  ]
+}

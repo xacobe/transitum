@@ -1,0 +1,6 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R_SOTRACO_1,SOTRACO,1,Terminus Hôpital - Ecole Wend Puiré,3
+R_SOTRACO_3,SOTRACO,3,pied à terre - Eglise AD fouraim,3
+R_SOTRACO_2,SOTRACO,2,Camp militaire - ENEP,3
+R_SOTRACO_LSE1,SOTRACO,LSE1,place de la nation - université,3
+R_SOTRACO_LSE2,SOTRACO,LSE2,Gouvernorat - ENEP,3

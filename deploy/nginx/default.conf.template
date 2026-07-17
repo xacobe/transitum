@@ -1,0 +1,197 @@
+# Processed by the official nginx image's docker-entrypoint templating
+# (mounted at /etc/nginx/templates/, rendered to /etc/nginx/conf.d/ on
+# container start via envsubst - see the `web` service in
+# docker-compose.yml). ${DOMAIN} is the only substituted variable; every
+# other $-prefixed name here (`$host`, `$remote_addr`, `$scheme`, ...) is
+# an nginx runtime variable, left untouched because envsubst only
+# replaces names that exist as actual container environment variables.
+#
+# This file is included inside the http {} block of nginx.conf, so
+# top-level directives here apply at the http level.
+# Rate-limit zones (defined at http level so they're shared across workers)
+limit_req_zone $binary_remote_addr zone=pb_auth:10m   rate=10r/m;
+limit_req_zone $binary_remote_addr zone=pb_api:10m    rate=60r/m;
+limit_req_zone $binary_remote_addr zone=routing:10m   rate=30r/m;
+
+gzip on;
+gzip_vary on;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_proxied any;
+# application/octet-stream intentionally excluded: .pmtiles and .bin are
+# already compressed internally; gzipping them drops Content-Length which
+# breaks XHR progress tracking in useOfflineTiles.js.
+gzip_types application/javascript text/css application/json image/svg+xml application/manifest+json;
+
+# Keep up to 8 idle connections to the Node routing service alive so nginx
+# reuses sockets instead of doing a TCP handshake per routing request.
+upstream routing_serve {
+    server routing-serve:3001;
+    keepalive 8;
+}
+
+# HTTP → HTTPS redirect + ACME renewals (webroot)
+server {
+    listen 80;
+    server_name ${DOMAIN} www.${DOMAIN} analytics.${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ── ${DOMAIN} (frontend + routing) ─────────────────────────────────────────
+server {
+    listen 443 ssl;
+    listen 443 quic reuseport;
+    http2 on;
+    server_name ${DOMAIN} www.${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Security headers at server level — inherited by locations that don't
+    # define their own add_header (proxy locations). Must be repeated in any
+    # location that sets Cache-Control because nginx drops server-level
+    # add_header directives when a child location defines its own.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Superuser auth: tight rate limit — 10 req/min, burst 5, no queuing
+    location = /pb/api/collections/_superusers/auth-with-password {
+        limit_req zone=pb_auth burst=5 nodelay;
+        proxy_pass         http://pocketbase:8090/api/collections/_superusers/auth-with-password;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+
+    # Report creation: rate limit to throttle spam submissions
+    location = /pb/api/collections/reports/records {
+        limit_req zone=pb_api burst=10 nodelay;
+        client_max_body_size 64k;
+        proxy_pass         http://pocketbase:8090/api/collections/reports/records;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+
+    location /pb/api/ {
+        limit_req zone=pb_api burst=30 nodelay;
+        proxy_pass         http://pocketbase:8090/api/;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+
+    location = /routing/health {
+        proxy_pass http://routing_serve/health;
+    }
+
+    location /routing/ {
+        limit_req        zone=routing burst=10 nodelay;
+        client_max_body_size 64k;
+        proxy_pass http://routing_serve/routing/;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+
+    # version.json must always be fresh so the app can detect data updates.
+    # Served from the data/cities Docker volume (not frontend/dist).
+    location ~* ^/data/(.+/version\.json)$ {
+        alias /var/data/cities/$1;
+        add_header Cache-Control "no-cache";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    # routes.json, stops.bin, timetable.bin, tiles.pmtiles — 1-day HTTP cache.
+    # Served from the data/cities Docker volume (mounted at /var/data/cities).
+    location /data/ {
+        alias /var/data/cities/;
+        add_header Cache-Control "public, max-age=86400";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    # Content-hashed assets: cache forever (hash changes on update)
+    location ~* ^/assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    # Service worker and workbox runtime: must never be cached so browsers
+    # detect updates immediately on every page load
+    location ~* ^/(sw\.js|workbox-[^/]+\.js)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    # index.html and all SPA routes: no-cache so new deploys are seen quickly
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Alt-Svc 'h3=":443"; ma=86400' always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.${DOMAIN}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://analytics.${DOMAIN} https://routing.openstreetmap.de https://tiles.openfreemap.org; worker-src 'self' blob:; child-src 'self' blob:; frame-src https://analytics.${DOMAIN}; frame-ancestors 'none'; base-uri 'self';" always;
+    }
+}
+
+# ── analytics.${DOMAIN} (Umami) ────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    listen 443 quic;
+    http2 on;
+    server_name analytics.${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/analytics.${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/analytics.${DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        proxy_pass http://umami:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

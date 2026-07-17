@@ -1,0 +1,18 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R_SOTRACO_9,SOTRACO,9,Stade Sangoulé LAMIZANA - ENEP,3
+R_SOTRACO_6,SOTRACO,6,,3
+R_SOTRACO_5,SOTRACO,5,Terminus Farakô BA - Place Tiéfo Amoro,3
+R_SOTRACO_3,SOTRACO,3,,3
+R_SOTRACO_10,SOTRACO,10,Terminus Samagan - Place Tiéfo Amoro,3
+R_SOTRACO_1,SOTRACO,1,Terminus Eaux et Forêts - Place Tiéfo Amoro,3
+R_SOTRACO_2,SOTRACO,2,Terminus secteurs 24 & 25 - Place Tiéfo Amoro,3
+R_SOTRACO_4,SOTRACO,4,Terminus secteurs 24 & 25 - Place Tiéfo Amoro,3
+R_SOTRACO_8,SOTRACO,8,Terminus Bindougousso - Place Tiéfo Amoro,3
+R_SOTRACO_41,SOTRACO,41,Univresité Nazi BONI - CSPS St Bernard,3
+R_SOTRACO_40,SOTRACO,40,Univresité Nazi BONI - Place Tiéfo Amoro,3
+R_SOTRACO_44,SOTRACO,44,Place Tiéfo Amoro - Terminus Lycée Scientifique (Darsalamy),3
+R_SOTRACO_2B,SOTRACO,2B,Place Tiéfo Amoro - Terminus Yegueresso,3
+R_SOTRACO_1B,SOTRACO,1B,Place Tiéfo Amoro - Cité verte Terminus,3
+R_SOTRACO_7,SOTRACO,7,tiéfo amoro - temple salem,3
+R_SOTRACO_L9,SOTRACO,L9,Cité CNSS - Marché secteur 29,3
+R_SOTRACO_42,SOTRACO,42,CROUB - CITE CNSS,3

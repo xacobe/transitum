@@ -1,0 +1,117 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import LineBadge from '@/components/shared/LineBadge.vue'
+import { useAgencies, agencyIdFromGtfsId } from '@/composables/useAgencies'
+import { IconWalk, IconArrowsLeftRight, IconBus } from '@tabler/icons-vue'
+import { formatDuration, formatTime } from '@/services/format'
+import type { Leg, BusLeg } from '@/types'
+
+const props = defineProps<{
+  leg: Leg
+  isTransfer?: boolean
+  // See LegChip.vue's identical prop for why this gates showing a specific
+  // clock time - only ever true here since ItineraryCard only renders this
+  // vertical layout for the selected card, whose fixedScheduleLines is
+  // already resolved by the time it's shown.
+  hasFixedSchedule?: boolean
+}>()
+
+const { hasMultipleAgencies } = useAgencies()
+const duration = computed(() => formatDuration(props.leg.duration))
+const departureTime = computed(() =>
+  props.leg.mode === 'BUS' ? formatTime((props.leg as BusLeg).startTime) : '',
+)
+const agencyId = computed(() => {
+  if (props.leg.mode !== 'BUS') return undefined
+  return agencyIdFromGtfsId((props.leg as BusLeg).agency?.gtfsId) ?? undefined
+})
+</script>
+
+<template>
+  <div v-if="leg.mode === 'BUS'" class="leg-row">
+    <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="32" />
+    <div class="leg-info">
+      <div v-if="leg.headsign" class="leg-headsign">→ {{ leg.headsign }}</div>
+      <div v-if="hasMultipleAgencies" class="leg-agency">{{ leg.agency?.name }}</div>
+    </div>
+    <div class="leg-trailing">
+      <span v-if="hasFixedSchedule" class="leg-time">{{ departureTime }}</span>
+      <span class="ride-chip">
+        <IconBus :size="13" aria-hidden="true" />
+        {{ duration }}
+      </span>
+    </div>
+  </div>
+  <div v-else class="leg-row leg-row--simple">
+    <span class="leg-icon" aria-hidden="true">
+      <IconArrowsLeftRight v-if="isTransfer" :size="15" />
+      <IconWalk v-else :size="15" />
+    </span>
+    <span class="leg-duration">{{ duration }}</span>
+  </div>
+</template>
+
+<style scoped>
+.leg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+}
+
+.leg-row:not(:last-child) {
+  border-bottom: 1px solid var(--color-sep);
+}
+
+.leg-row--simple {
+  color: var(--color-muted);
+  padding-left: 5px;
+}
+
+.leg-icon {
+  display: flex;
+  flex: none;
+}
+
+.leg-duration {
+  font: var(--text-caption-sm);
+}
+
+.leg-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.leg-headsign {
+  font: var(--text-label-strong);
+  color: var(--color-text);
+}
+
+.leg-agency {
+  font: var(--text-caption-sm);
+  color: var(--color-muted);
+  margin-top: 2px;
+}
+
+.leg-trailing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}
+
+.leg-time {
+  font: 700 var(--text-label-strong);
+  color: var(--color-text);
+}
+
+.ride-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 var(--text-caption-sm);
+  color: var(--color-muted);
+}
+</style>

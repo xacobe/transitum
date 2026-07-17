@@ -1,0 +1,8 @@
+{
+  "name": "pipeline",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "minotor": "^11.2.3"
+  }
+}

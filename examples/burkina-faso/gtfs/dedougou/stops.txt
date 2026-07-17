@@ -1,0 +1,7 @@
+stop_id,stop_name,stop_lat,stop_lon
+DDG1,Terminus Université de Dédougou,12.457955,-3.476794
+DDG2,ONEA Dédougou,12.45831,-3.473637
+DDG3,Gouvernorat de la Boucle du Mouhoun,12.460545,-3.469749
+DDG4,Direction Régionale Habitat et Urbanisme,12.462799,-3.465802
+DDG5,Carrefour Secteur 10,12.464474,-3.462769
+DDG6,Rond-point Nazi Boni,12.463492,-3.460136

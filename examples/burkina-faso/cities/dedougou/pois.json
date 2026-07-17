@@ -1,0 +1,37 @@
+[
+  {
+    "id": "node/4139127428",
+    "name": "Marché Central de Dédougou",
+    "type": "marketplace",
+    "lat": 12.4631685,
+    "lon": -3.4602095
+  },
+  {
+    "id": "node/6036682427",
+    "name": "Marché du Secteur 6 (Flakin)",
+    "type": "marketplace",
+    "lat": 12.453727,
+    "lon": -3.4513056
+  },
+  {
+    "id": "node/9332927088",
+    "name": "CMU",
+    "type": "hospital",
+    "lat": 12.4730745,
+    "lon": -3.4635261
+  },
+  {
+    "id": "way/412501968",
+    "name": "CHR DEDOUGOU",
+    "type": "hospital",
+    "lat": 12.4610972,
+    "lon": -3.4655633
+  },
+  {
+    "id": "way/805953543",
+    "name": "Centre hospitalier universitaire",
+    "type": "hospital",
+    "lat": 12.48068,
+    "lon": -3.4422679
+  }
+]

@@ -1,0 +1,1416 @@
+[
+  {
+    "id": "node/3809622057",
+    "name": "CSPS de Kirio",
+    "type": "hospital",
+    "lat": 13.1475065,
+    "lon": -2.6881585
+  },
+  {
+    "id": "node/3810607281",
+    "name": "CSPS de Gourbala",
+    "type": "hospital",
+    "lat": 13.1336229,
+    "lon": -2.600376
+  },
+  {
+    "id": "node/4528456927",
+    "name": "Malika",
+    "type": "hospital",
+    "lat": 13.570868,
+    "lon": -2.4107923
+  },
+  {
+    "id": "node/5742132076",
+    "name": "Marché de Tougo",
+    "type": "marketplace",
+    "lat": 13.2060757,
+    "lon": -2.1152946
+  },
+  {
+    "id": "node/5742155294",
+    "name": "Marché de Gourcy",
+    "type": "marketplace",
+    "lat": 13.2059908,
+    "lon": -2.3560551
+  },
+  {
+    "id": "node/5745557733",
+    "name": "Marché de Pallé",
+    "type": "marketplace",
+    "lat": 13.1147671,
+    "lon": -2.6943286
+  },
+  {
+    "id": "node/5745607090",
+    "name": "Marché de Bangassé",
+    "type": "marketplace",
+    "lat": 13.1034427,
+    "lon": -2.6004258
+  },
+  {
+    "id": "node/5745651870",
+    "name": "Marché de Niességa",
+    "type": "marketplace",
+    "lat": 13.1129176,
+    "lon": -2.3499195
+  },
+  {
+    "id": "node/5745659003",
+    "name": "Marché de Bougounam",
+    "type": "marketplace",
+    "lat": 13.3618811,
+    "lon": -2.3896109
+  },
+  {
+    "id": "node/5745685484",
+    "name": "Marché de Lago",
+    "type": "marketplace",
+    "lat": 13.3293933,
+    "lon": -2.4994151
+  },
+  {
+    "id": "node/5745734416",
+    "name": "Marché de Minima",
+    "type": "marketplace",
+    "lat": 13.2625028,
+    "lon": -2.2842859
+  },
+  {
+    "id": "node/5745878023",
+    "name": "Marché de Ridimbo",
+    "type": "marketplace",
+    "lat": 13.1602591,
+    "lon": -2.2340937
+  },
+  {
+    "id": "node/5745884076",
+    "name": "Marché de Rikiba",
+    "type": "marketplace",
+    "lat": 13.1681217,
+    "lon": -2.167308
+  },
+  {
+    "id": "node/5745894905",
+    "name": "Marché de Kindinbo",
+    "type": "marketplace",
+    "lat": 13.2303019,
+    "lon": -2.1925195
+  },
+  {
+    "id": "node/5745911607",
+    "name": "Marché de Roba",
+    "type": "marketplace",
+    "lat": 13.2756759,
+    "lon": -2.1425754
+  },
+  {
+    "id": "node/5757175477",
+    "name": "Marché de Kogola",
+    "type": "marketplace",
+    "lat": 13.109762,
+    "lon": -2.3959476
+  },
+  {
+    "id": "node/5777206505",
+    "name": "Marché de Ouindigui",
+    "type": "marketplace",
+    "lat": 13.6791938,
+    "lon": -1.9659586
+  },
+  {
+    "id": "node/5785131968",
+    "name": "Marché de Rondo",
+    "type": "marketplace",
+    "lat": 13.2398985,
+    "lon": -1.9432765
+  },
+  {
+    "id": "node/5786766145",
+    "name": "Marché de Goungré",
+    "type": "marketplace",
+    "lat": 13.1814697,
+    "lon": -1.9120717
+  },
+  {
+    "id": "node/5786809648",
+    "name": "Marché de Kalsaka",
+    "type": "marketplace",
+    "lat": 13.1755597,
+    "lon": -1.9826514
+  },
+  {
+    "id": "node/5786883070",
+    "name": "Marché de Barma-Mossi",
+    "type": "marketplace",
+    "lat": 13.2404781,
+    "lon": -2.0588207
+  },
+  {
+    "id": "node/5786923318",
+    "name": "Marché de Rima-Mossi",
+    "type": "marketplace",
+    "lat": 13.1798923,
+    "lon": -2.07445
+  },
+  {
+    "id": "node/5786978838",
+    "name": "Yaar de Béma-Silmi-Mossi",
+    "type": "marketplace",
+    "lat": 13.1142917,
+    "lon": -2.0412388
+  },
+  {
+    "id": "node/5787276993",
+    "name": "Marché de Bissiguin",
+    "type": "marketplace",
+    "lat": 13.332062,
+    "lon": -1.9405487
+  },
+  {
+    "id": "node/5787398134",
+    "name": "Marché de Kiébléga",
+    "type": "marketplace",
+    "lat": 13.3549956,
+    "lon": -1.9562691
+  },
+  {
+    "id": "node/5787549437",
+    "name": "Marché de Téonsogo",
+    "type": "marketplace",
+    "lat": 13.5079379,
+    "lon": -1.9127101
+  },
+  {
+    "id": "node/5787614169",
+    "name": "Ancien marché de Ramsa",
+    "type": "marketplace",
+    "lat": 13.4871368,
+    "lon": -2.1062408
+  },
+  {
+    "id": "node/5787685626",
+    "name": "Marché de Gambo",
+    "type": "marketplace",
+    "lat": 13.3267194,
+    "lon": -2.0025802
+  },
+  {
+    "id": "node/5787705888",
+    "name": "Yaar de Koukabako-Yarcé",
+    "type": "marketplace",
+    "lat": 13.3041838,
+    "lon": -2.0731008
+  },
+  {
+    "id": "node/5787732109",
+    "name": "Marché de Tarba",
+    "type": "marketplace",
+    "lat": 13.1653403,
+    "lon": -2.4764889
+  },
+  {
+    "id": "node/5789672210",
+    "name": "Yaar de Kourbo",
+    "type": "marketplace",
+    "lat": 13.1064077,
+    "lon": -2.5650796
+  },
+  {
+    "id": "node/5789728467",
+    "name": "Yaar de Kasséba-Samo",
+    "type": "marketplace",
+    "lat": 13.1698794,
+    "lon": -2.4339545
+  },
+  {
+    "id": "node/5789763411",
+    "name": "Yaar de Kibilo",
+    "type": "marketplace",
+    "lat": 13.2148246,
+    "lon": -2.2484422
+  },
+  {
+    "id": "node/5818512055",
+    "name": "Yaar de Koumna-Koudgo",
+    "type": "marketplace",
+    "lat": 13.6192596,
+    "lon": -2.0077072
+  },
+  {
+    "id": "node/5878601692",
+    "name": "Yaar de Toolo",
+    "type": "marketplace",
+    "lat": 13.7446233,
+    "lon": -1.9657749
+  },
+  {
+    "id": "node/5878621497",
+    "name": "Yaar de Koumna",
+    "type": "marketplace",
+    "lat": 13.6023983,
+    "lon": -2.0764361
+  },
+  {
+    "id": "node/6552296802",
+    "name": "Marché de Thiou",
+    "type": "marketplace",
+    "lat": 13.8045355,
+    "lon": -2.6579582
+  },
+  {
+    "id": "node/6552296803",
+    "name": "Grand Marché",
+    "type": "marketplace",
+    "lat": 13.5808855,
+    "lon": -2.4209256
+  },
+  {
+    "id": "node/6724834862",
+    "name": "Marché de Réga",
+    "type": "marketplace",
+    "lat": 13.3557642,
+    "lon": -2.5436863
+  },
+  {
+    "id": "node/6724862817",
+    "name": "CSPS de Rega",
+    "type": "hospital",
+    "lat": 13.3567689,
+    "lon": -2.5444186
+  },
+  {
+    "id": "node/6724921999",
+    "name": "Marché de Boh",
+    "type": "marketplace",
+    "lat": 13.3961767,
+    "lon": -2.5244616
+  },
+  {
+    "id": "node/6727503030",
+    "name": "Marché de Ninga",
+    "type": "marketplace",
+    "lat": 13.4245686,
+    "lon": -2.5089343
+  },
+  {
+    "id": "node/6973950221",
+    "name": "Marché de Zogoré",
+    "type": "marketplace",
+    "lat": 13.3972712,
+    "lon": -2.5927855
+  },
+  {
+    "id": "node/8419198058",
+    "name": "Marché de Lossa-Mossi",
+    "type": "marketplace",
+    "lat": 13.9861842,
+    "lon": -2.3036984
+  },
+  {
+    "id": "node/8425106548",
+    "name": "CSPS de Doré",
+    "type": "hospital",
+    "lat": 13.9339657,
+    "lon": -2.6254749
+  },
+  {
+    "id": "node/8425473241",
+    "name": "CSPS de Baani",
+    "type": "hospital",
+    "lat": 13.9052236,
+    "lon": -2.6158673
+  },
+  {
+    "id": "node/8426390447",
+    "name": "Marché de Yensé",
+    "type": "marketplace",
+    "lat": 13.9149778,
+    "lon": -2.8437035
+  },
+  {
+    "id": "node/8426390704",
+    "name": "CSPS de Yensé",
+    "type": "hospital",
+    "lat": 13.9096627,
+    "lon": -2.8423986
+  },
+  {
+    "id": "node/8431911341",
+    "name": "CSPS de Doubaré",
+    "type": "hospital",
+    "lat": 13.8645361,
+    "lon": -2.8624052
+  },
+  {
+    "id": "node/8434187080",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.8534022,
+    "lon": -2.7315315
+  },
+  {
+    "id": "node/8434187081",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.9720251,
+    "lon": -2.2559497
+  },
+  {
+    "id": "node/8434793083",
+    "name": "Marché d'Ingané",
+    "type": "marketplace",
+    "lat": 13.9523129,
+    "lon": -2.2233179
+  },
+  {
+    "id": "node/8434810360",
+    "name": "Centre Médical d'Ingané",
+    "type": "hospital",
+    "lat": 13.9541168,
+    "lon": -2.2256957
+  },
+  {
+    "id": "node/8434810407",
+    "name": "Marché de Posso",
+    "type": "marketplace",
+    "lat": 13.969866,
+    "lon": -2.2477528
+  },
+  {
+    "id": "node/8435538825",
+    "name": "Marché de Dandambara",
+    "type": "marketplace",
+    "lat": 13.9593385,
+    "lon": -2.3414987
+  },
+  {
+    "id": "node/8435538920",
+    "name": "CSPS de Dandambara",
+    "type": "hospital",
+    "lat": 13.9552322,
+    "lon": -2.3445658
+  },
+  {
+    "id": "node/8439070104",
+    "name": "Centre Médical de Toulfé",
+    "type": "hospital",
+    "lat": 13.882592,
+    "lon": -1.95032
+  },
+  {
+    "id": "node/8439072282",
+    "name": "Marché de Guilan",
+    "type": "marketplace",
+    "lat": 13.9196706,
+    "lon": -2.1343289
+  },
+  {
+    "id": "node/8439073023",
+    "name": "CSPS de Pellaboukou",
+    "type": "hospital",
+    "lat": 13.9065606,
+    "lon": -2.0909321
+  },
+  {
+    "id": "node/8441170224",
+    "name": "Marché de Yilligué",
+    "type": "marketplace",
+    "lat": 13.8260892,
+    "lon": -2.2230685
+  },
+  {
+    "id": "node/8441178399",
+    "name": "Centre Médical de Nogo",
+    "type": "hospital",
+    "lat": 13.8383091,
+    "lon": -2.1988159
+  },
+  {
+    "id": "node/8441178877",
+    "name": "CSPS de Rimassa-Tanghin",
+    "type": "hospital",
+    "lat": 13.8351682,
+    "lon": -2.051497
+  },
+  {
+    "id": "node/8442533229",
+    "name": "CSPS de Silia",
+    "type": "hospital",
+    "lat": 13.7842103,
+    "lon": -2.1405154
+  },
+  {
+    "id": "node/8443729562",
+    "name": "CSPS urbain de Titao",
+    "type": "hospital",
+    "lat": 13.7643467,
+    "lon": -2.0664355
+  },
+  {
+    "id": "node/8443729581",
+    "name": "Marché de Titao",
+    "type": "marketplace",
+    "lat": 13.7691532,
+    "lon": -2.0708773
+  },
+  {
+    "id": "node/8443729831",
+    "name": "CSPS de Sala-Foulbé",
+    "type": "hospital",
+    "lat": 13.7866486,
+    "lon": -2.1020579
+  },
+  {
+    "id": "node/8443730065",
+    "name": "Marché à bétail de Titao",
+    "type": "marketplace",
+    "lat": 13.7698592,
+    "lon": -2.083953
+  },
+  {
+    "id": "node/8446835707",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6866942,
+    "lon": -2.1466792
+  },
+  {
+    "id": "node/8446835734",
+    "name": "CSPS de You",
+    "type": "hospital",
+    "lat": 13.7062426,
+    "lon": -2.1453582
+  },
+  {
+    "id": "node/8446835792",
+    "name": "Marché de You",
+    "type": "marketplace",
+    "lat": 13.705681,
+    "lon": -2.1433908
+  },
+  {
+    "id": "node/8446836809",
+    "name": "CSPS de Selbonga",
+    "type": "hospital",
+    "lat": 13.752739,
+    "lon": -2.0208272
+  },
+  {
+    "id": "node/8447209587",
+    "name": "Marché de Rambo",
+    "type": "marketplace",
+    "lat": 13.6053272,
+    "lon": -2.1148896
+  },
+  {
+    "id": "node/8447272851",
+    "name": "Centre Médical de Rambo",
+    "type": "hospital",
+    "lat": 13.6104185,
+    "lon": -2.1137618
+  },
+  {
+    "id": "node/8451380177",
+    "name": "Yaar de Doussaré",
+    "type": "marketplace",
+    "lat": 13.5961089,
+    "lon": -1.9648992
+  },
+  {
+    "id": "node/8451380203",
+    "name": "CSPS de Doussaré",
+    "type": "hospital",
+    "lat": 13.5965807,
+    "lon": -1.9670396
+  },
+  {
+    "id": "node/8452936789",
+    "name": "Marché de Robolo",
+    "type": "marketplace",
+    "lat": 13.6674399,
+    "lon": -1.9102746
+  },
+  {
+    "id": "node/8453947891",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6808904,
+    "lon": -1.9658098
+  },
+  {
+    "id": "node/8454432381",
+    "name": "CSPS de Bouna",
+    "type": "hospital",
+    "lat": 13.7737121,
+    "lon": -1.9664884
+  },
+  {
+    "id": "node/8454432745",
+    "name": "CSPS de Toolo",
+    "type": "hospital",
+    "lat": 13.7407842,
+    "lon": -1.9648965
+  },
+  {
+    "id": "node/8454433504",
+    "name": "CSPS de Ouindigui",
+    "type": "hospital",
+    "lat": 13.6784928,
+    "lon": -1.9637096
+  },
+  {
+    "id": "node/8457082145",
+    "name": "CSPS de Ninigui",
+    "type": "hospital",
+    "lat": 13.8851958,
+    "lon": -2.3628397
+  },
+  {
+    "id": "node/8457528708",
+    "name": "CSPS de Dessé",
+    "type": "hospital",
+    "lat": 13.9831247,
+    "lon": -2.4351078
+  },
+  {
+    "id": "node/8458207966",
+    "name": "CSPS de Bidi-Mossi",
+    "type": "hospital",
+    "lat": 13.9171596,
+    "lon": -2.4948983
+  },
+  {
+    "id": "node/8458208531",
+    "name": "CSPS de Kéké-Mossi",
+    "type": "hospital",
+    "lat": 13.9155311,
+    "lon": -2.444002
+  },
+  {
+    "id": "node/8458535335",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.9039921,
+    "lon": -2.4827546
+  },
+  {
+    "id": "node/8458535336",
+    "name": "Marché de Bidi-Rimaïbé-Todiam",
+    "type": "marketplace",
+    "lat": 13.9056168,
+    "lon": -2.4853805
+  },
+  {
+    "id": "node/8461435150",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.8539113,
+    "lon": -2.313817
+  },
+  {
+    "id": "node/8461435167",
+    "name": "CSPS de Mené",
+    "type": "hospital",
+    "lat": 13.8586509,
+    "lon": -2.3225369
+  },
+  {
+    "id": "node/8461435331",
+    "name": "Marché de Mené",
+    "type": "marketplace",
+    "lat": 13.8543735,
+    "lon": -2.3179168
+  },
+  {
+    "id": "node/8461437363",
+    "name": "CSPS de Koumbri",
+    "type": "hospital",
+    "lat": 13.8447691,
+    "lon": -2.4131875
+  },
+  {
+    "id": "node/8461437405",
+    "name": "Marché de Koumbri",
+    "type": "marketplace",
+    "lat": 13.8452314,
+    "lon": -2.4109411
+  },
+  {
+    "id": "node/8462499317",
+    "name": "CSPS de Sabouna",
+    "type": "hospital",
+    "lat": 13.7872725,
+    "lon": -2.3267841
+  },
+  {
+    "id": "node/8462502006",
+    "name": "CSPS de Derhogo",
+    "type": "hospital",
+    "lat": 13.8365056,
+    "lon": -2.3335393
+  },
+  {
+    "id": "node/8463720789",
+    "name": "CSPS de Barga-Mossi",
+    "type": "hospital",
+    "lat": 13.7985242,
+    "lon": -2.2676253
+  },
+  {
+    "id": "node/8467320257",
+    "name": "Marché de Dinguiri",
+    "type": "marketplace",
+    "lat": 13.7658941,
+    "lon": -2.3599738
+  },
+  {
+    "id": "node/8475738514",
+    "name": "CSPS de Dinguiri",
+    "type": "hospital",
+    "lat": 13.7685801,
+    "lon": -2.3637933
+  },
+  {
+    "id": "node/8476473771",
+    "name": "Marché de Soulou",
+    "type": "marketplace",
+    "lat": 13.7582922,
+    "lon": -2.4751022
+  },
+  {
+    "id": "node/8476474070",
+    "name": "CSPS de Soulou",
+    "type": "hospital",
+    "lat": 13.7634896,
+    "lon": -2.4712881
+  },
+  {
+    "id": "node/8476574834",
+    "name": "CSPS de Ramdolla-Mossi",
+    "type": "hospital",
+    "lat": 13.7447262,
+    "lon": -2.3003
+  },
+  {
+    "id": "node/8476574845",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.7488245,
+    "lon": -2.3032317
+  },
+  {
+    "id": "node/8477435862",
+    "name": "CSPS de Ronga",
+    "type": "hospital",
+    "lat": 13.7301902,
+    "lon": -2.3965162
+  },
+  {
+    "id": "node/8477437137",
+    "name": "Marché de Ramdolla-Mossi",
+    "type": "marketplace",
+    "lat": 13.748633,
+    "lon": -2.3037292
+  },
+  {
+    "id": "node/8477437178",
+    "name": "CSPS de Lemnogo-Mossi",
+    "type": "hospital",
+    "lat": 13.7327228,
+    "lon": -2.315492
+  },
+  {
+    "id": "node/8480825248",
+    "name": "CSPS de Pogoro-Mossi",
+    "type": "hospital",
+    "lat": 13.7552648,
+    "lon": -2.4258354
+  },
+  {
+    "id": "node/8481228177",
+    "name": "CSPS de Rim",
+    "type": "hospital",
+    "lat": 13.7156716,
+    "lon": -2.5212657
+  },
+  {
+    "id": "node/8482837425",
+    "name": "Centre médical de Thiou",
+    "type": "hospital",
+    "lat": 13.7974145,
+    "lon": -2.6520208
+  },
+  {
+    "id": "node/8482837482",
+    "name": "Marché à bétail de Thiou",
+    "type": "marketplace",
+    "lat": 13.7890099,
+    "lon": -2.6477292
+  },
+  {
+    "id": "node/8482837660",
+    "name": "CSPS de Sim",
+    "type": "hospital",
+    "lat": 13.7954062,
+    "lon": -2.5814867
+  },
+  {
+    "id": "node/8482837670",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.7977864,
+    "lon": -2.5784826
+  },
+  {
+    "id": "node/8482838724",
+    "name": "CSPS de Pétossiré",
+    "type": "hospital",
+    "lat": 13.8518136,
+    "lon": -2.6475079
+  },
+  {
+    "id": "node/8483613498",
+    "name": "Dispensaire du Secteur 6",
+    "type": "hospital",
+    "lat": 13.7945349,
+    "lon": -2.7048147
+  },
+  {
+    "id": "node/8483613535",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.8066106,
+    "lon": -2.6609056
+  },
+  {
+    "id": "node/8483813241",
+    "name": "Marché de Kalo",
+    "type": "marketplace",
+    "lat": 13.7297212,
+    "lon": -2.6719496
+  },
+  {
+    "id": "node/8483813254",
+    "name": "CSPS de Kalo",
+    "type": "hospital",
+    "lat": 13.7287246,
+    "lon": -2.6758441
+  },
+  {
+    "id": "node/8483813475",
+    "name": "Marché de Dénean",
+    "type": "marketplace",
+    "lat": 13.686126,
+    "lon": -2.8175935
+  },
+  {
+    "id": "node/8483813477",
+    "name": "Maternité Bokinda",
+    "type": "hospital",
+    "lat": 13.6854185,
+    "lon": -2.814572
+  },
+  {
+    "id": "node/8483813487",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6876232,
+    "lon": -2.816074
+  },
+  {
+    "id": "node/8483902542",
+    "name": "Dispensaire de Noden",
+    "type": "hospital",
+    "lat": 13.7345623,
+    "lon": -2.5702617
+  },
+  {
+    "id": "node/8484111614",
+    "name": "CSPS Wouro-Narain",
+    "type": "hospital",
+    "lat": 13.6649431,
+    "lon": -2.541149
+  },
+  {
+    "id": "node/8485590703",
+    "name": "CSPS de Birgondogo",
+    "type": "hospital",
+    "lat": 13.6306288,
+    "lon": -2.858972
+  },
+  {
+    "id": "node/8486701903",
+    "name": "CSPS de Douma",
+    "type": "hospital",
+    "lat": 13.6069565,
+    "lon": -2.7570292
+  },
+  {
+    "id": "node/8486701950",
+    "name": "Marché de Douma",
+    "type": "marketplace",
+    "lat": 13.6098815,
+    "lon": -2.758247
+  },
+  {
+    "id": "node/8491506710",
+    "name": "CSPS de Tougué-Mossi",
+    "type": "hospital",
+    "lat": 13.5257917,
+    "lon": -2.669321
+  },
+  {
+    "id": "node/8491585251",
+    "name": "Marché de Guessoum",
+    "type": "marketplace",
+    "lat": 13.4541624,
+    "lon": -2.6662539
+  },
+  {
+    "id": "node/8492112205",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6332172,
+    "lon": -2.6014611
+  },
+  {
+    "id": "node/8492112408",
+    "name": "CSPS de Touya",
+    "type": "hospital",
+    "lat": 13.6454238,
+    "lon": -2.6172513
+  },
+  {
+    "id": "node/8492112460",
+    "name": "Marché de Keleguérima",
+    "type": "marketplace",
+    "lat": 13.6308791,
+    "lon": -2.6327759
+  },
+  {
+    "id": "node/8492112614",
+    "name": "CSPS de Pella-Tibitiguia",
+    "type": "hospital",
+    "lat": 13.6219498,
+    "lon": -2.6432003
+  },
+  {
+    "id": "node/8493038227",
+    "name": "Marché de Tangaye",
+    "type": "marketplace",
+    "lat": 13.5410143,
+    "lon": -2.5445218
+  },
+  {
+    "id": "node/8493038527",
+    "name": "CSPS de Namsiguia",
+    "type": "hospital",
+    "lat": 13.5892757,
+    "lon": -2.5665709
+  },
+  {
+    "id": "node/8493232441",
+    "name": "CSPS de Bonsomnoré",
+    "type": "hospital",
+    "lat": 13.5898441,
+    "lon": -2.5354144
+  },
+  {
+    "id": "node/8493232590",
+    "name": "Centre Médical de Tangaye",
+    "type": "hospital",
+    "lat": 13.5408852,
+    "lon": -2.5465724
+  },
+  {
+    "id": "node/8494048318",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.403412,
+    "lon": -2.5902133
+  },
+  {
+    "id": "node/8494048576",
+    "name": "CSPS de Ninga",
+    "type": "hospital",
+    "lat": 13.4185041,
+    "lon": -2.5134109
+  },
+  {
+    "id": "node/8522163132",
+    "name": "CSPS de Roba",
+    "type": "hospital",
+    "lat": 13.6625662,
+    "lon": -2.4919197
+  },
+  {
+    "id": "node/8528668027",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.6155644,
+    "lon": -2.4501899
+  },
+  {
+    "id": "node/8528974605",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.5855996,
+    "lon": -2.477645
+  },
+  {
+    "id": "node/8529182748",
+    "name": "CSPS de Bissigaye",
+    "type": "hospital",
+    "lat": 13.5904606,
+    "lon": -2.4759632
+  },
+  {
+    "id": "node/8529404135",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.5495294,
+    "lon": -2.458836
+  },
+  {
+    "id": "node/8529501831",
+    "name": "CSPS de Bembela",
+    "type": "hospital",
+    "lat": 13.5572881,
+    "lon": -2.4858378
+  },
+  {
+    "id": "node/8563213472",
+    "name": "CSPS de Soubo",
+    "type": "hospital",
+    "lat": 13.5044262,
+    "lon": -2.4891463
+  },
+  {
+    "id": "node/8563446002",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.4974573,
+    "lon": -2.4563496
+  },
+  {
+    "id": "node/8563446111",
+    "name": "Marché de Sissamba",
+    "type": "marketplace",
+    "lat": 13.5023919,
+    "lon": -2.4659063
+  },
+  {
+    "id": "node/8563446143",
+    "name": "CSPS de Sissamba",
+    "type": "hospital",
+    "lat": 13.500634,
+    "lon": -2.4647127
+  },
+  {
+    "id": "node/8564644231",
+    "name": "CSPS de Somiaga",
+    "type": "hospital",
+    "lat": 13.502371,
+    "lon": -2.4092808
+  },
+  {
+    "id": "node/8564644458",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.5405228,
+    "lon": -2.406722
+  },
+  {
+    "id": "node/8566744122",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.566199,
+    "lon": -2.3962453
+  },
+  {
+    "id": "node/8566744211",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.5732101,
+    "lon": -2.408739
+  },
+  {
+    "id": "node/8567047422",
+    "name": "Marché de Lougouri",
+    "type": "marketplace",
+    "lat": 13.5243756,
+    "lon": -2.3113775
+  },
+  {
+    "id": "node/8567047665",
+    "name": "CSPS Urbain (Secteur 15)",
+    "type": "hospital",
+    "lat": 13.5455464,
+    "lon": -2.370197
+  },
+  {
+    "id": "node/8567047798",
+    "name": "Centre Hospitalier Universitaire de Ouahigouya",
+    "type": "hospital",
+    "lat": 13.5429674,
+    "lon": -2.393999
+  },
+  {
+    "id": "node/8567507203",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.5758852,
+    "lon": -2.4285766
+  },
+  {
+    "id": "node/8567523842",
+    "name": "CSPS Urbain",
+    "type": "hospital",
+    "lat": 13.5471005,
+    "lon": -2.441057
+  },
+  {
+    "id": "node/8569205013",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6723878,
+    "lon": -2.3458157
+  },
+  {
+    "id": "node/8569216848",
+    "name": "CSPS d'Aoréma",
+    "type": "hospital",
+    "lat": 13.6752038,
+    "lon": -2.34424
+  },
+  {
+    "id": "node/8569216974",
+    "name": "Marché de Youba",
+    "type": "marketplace",
+    "lat": 13.6688864,
+    "lon": -2.368117
+  },
+  {
+    "id": "node/8569217029",
+    "name": "Centre médical de Youba",
+    "type": "hospital",
+    "lat": 13.6673682,
+    "lon": -2.3656721
+  },
+  {
+    "id": "node/8569217030",
+    "name": "Marché à bétail",
+    "type": "marketplace",
+    "lat": 13.6636908,
+    "lon": -2.3657848
+  },
+  {
+    "id": "node/8569217207",
+    "name": "CSPS Bendogo",
+    "type": "hospital",
+    "lat": 13.633053,
+    "lon": -2.3621008
+  },
+  {
+    "id": "node/8569217270",
+    "name": "CSPS de Kononga",
+    "type": "hospital",
+    "lat": 13.610584,
+    "lon": -2.3178095
+  },
+  {
+    "id": "node/8569470735",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.6182169,
+    "lon": -2.4328065
+  },
+  {
+    "id": "node/8571233221",
+    "name": "Marché de Sodin",
+    "type": "marketplace",
+    "lat": 13.7009931,
+    "lon": -2.4268238
+  },
+  {
+    "id": "node/8571233288",
+    "name": "CSPS de Sodin",
+    "type": "hospital",
+    "lat": 13.702653,
+    "lon": -2.4245788
+  },
+  {
+    "id": "node/8571539729",
+    "name": "CSPS de Nango-Foulcé",
+    "type": "hospital",
+    "lat": 13.450899,
+    "lon": -2.5977999
+  },
+  {
+    "id": "node/8571539730",
+    "name": "Dispensaire de Samni",
+    "type": "hospital",
+    "lat": 13.9309471,
+    "lon": -2.5645982
+  },
+  {
+    "id": "node/8571539754",
+    "name": "Magasin agricole",
+    "type": "marketplace",
+    "lat": 13.7855232,
+    "lon": -2.0793128
+  },
+  {
+    "id": "node/8571550090",
+    "name": "Dispensaire de Goutoula",
+    "type": "hospital",
+    "lat": 13.6083356,
+    "lon": -2.5797701
+  },
+  {
+    "id": "node/10004485800",
+    "name": "Marché du secteur 13",
+    "type": "marketplace",
+    "lat": 13.5701965,
+    "lon": -2.4323864
+  },
+  {
+    "id": "node/13408580810",
+    "name": "Marché communal",
+    "type": "marketplace",
+    "lat": 13.4814051,
+    "lon": -2.3315316
+  },
+  {
+    "id": "node/13412788998",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4996781,
+    "lon": -2.3651397
+  },
+  {
+    "id": "node/13415362407",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4859696,
+    "lon": -2.3280636
+  },
+  {
+    "id": "node/13415362463",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.4873702,
+    "lon": -2.328651
+  },
+  {
+    "id": "node/13420815929",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.5000798,
+    "lon": -2.2712919
+  },
+  {
+    "id": "node/13423245252",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4298569,
+    "lon": -2.3736973
+  },
+  {
+    "id": "node/13423801518",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.4089016,
+    "lon": -2.3756191
+  },
+  {
+    "id": "node/13426855021",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.4185106,
+    "lon": -2.3096207
+  },
+  {
+    "id": "node/13426953943",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4167678,
+    "lon": -2.3070028
+  },
+  {
+    "id": "node/13432283415",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.3858883,
+    "lon": -2.3468605
+  },
+  {
+    "id": "node/13432283502",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.3849176,
+    "lon": -2.3481935
+  },
+  {
+    "id": "node/13442536229",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.500664,
+    "lon": -2.2671828
+  },
+  {
+    "id": "node/13442544610",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4495634,
+    "lon": -2.2502822
+  },
+  {
+    "id": "node/13443437658",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.4537372,
+    "lon": -2.246511
+  },
+  {
+    "id": "node/13449697790",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4408373,
+    "lon": -2.1949804
+  },
+  {
+    "id": "node/13449741227",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.4404434,
+    "lon": -2.1958467
+  },
+  {
+    "id": "node/13456402182",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.44774,
+    "lon": -2.1596986
+  },
+  {
+    "id": "node/13462131186",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4804948,
+    "lon": -2.1743435
+  },
+  {
+    "id": "node/13468053811",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4800644,
+    "lon": -2.1631426
+  },
+  {
+    "id": "node/13468053934",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.4824849,
+    "lon": -2.165688
+  },
+  {
+    "id": "node/13503944980",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.4212266,
+    "lon": -2.0814961
+  },
+  {
+    "id": "node/13503945192",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.4154607,
+    "lon": -2.0893845
+  },
+  {
+    "id": "node/13514468709",
+    "name": "CSPS",
+    "type": "hospital",
+    "lat": 13.1111569,
+    "lon": -2.6940885
+  },
+  {
+    "id": "node/13529363507",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.1351888,
+    "lon": -2.5994173
+  },
+  {
+    "id": "node/13534212912",
+    "name": "Yaar",
+    "type": "marketplace",
+    "lat": 13.1476453,
+    "lon": -2.6870799
+  },
+  {
+    "id": "way/217852973",
+    "name": "Grand Marché",
+    "type": "marketplace",
+    "lat": 13.5806908,
+    "lon": -2.4208501
+  },
+  {
+    "id": "way/289706443",
+    "name": "CMA de Gourcy",
+    "type": "hospital",
+    "lat": 13.2180448,
+    "lon": -2.3597881
+  },
+  {
+    "id": "way/303489680",
+    "name": "Marché",
+    "type": "marketplace",
+    "lat": 13.4368331,
+    "lon": -1.9634839
+  },
+  {
+    "id": "way/422817659",
+    "name": "CSPS de Zogoré",
+    "type": "hospital",
+    "lat": 13.4020363,
+    "lon": -2.5930378
+  },
+  {
+    "id": "way/454523987",
+    "name": "Centre Hospitalier Universitaire de Ouahigouya",
+    "type": "hospital",
+    "lat": 13.5430261,
+    "lon": -2.3939861
+  },
+  {
+    "id": "way/789939647",
+    "name": "Malika",
+    "type": "hospital",
+    "lat": 13.567412,
+    "lon": -2.4105241
+  },
+  {
+    "id": "way/922835054",
+    "name": "Hôpital de Ouahigouya",
+    "type": "hospital",
+    "lat": 13.5783054,
+    "lon": -2.4125759
+  },
+  {
+    "id": "way/1191569240",
+    "name": "CSPS de Bougounam",
+    "type": "hospital",
+    "lat": 13.3632185,
+    "lon": -2.3898938
+  },
+  {
+    "id": "way/1284598575",
+    "name": "CMA de Titao",
+    "type": "hospital",
+    "lat": 13.7712519,
+    "lon": -2.0696511
+  }
+]

@@ -1,0 +1,12 @@
+/* Only the "latin" subset (no latin-ext/vietnamese): covers all of the
+   app's actual content (fr/en, accents, curly quotes - U+0000-00FF +
+   U+2000-206F). The other subsets added nothing and tripled the font
+   precache (240KB -> 100KB).
+
+   Only the weights the CSS actually uses (grepped "font:"/"font-weight"
+   in src/): Plus Jakarta Sans 600/700/800 (500 is never used), Space
+   Grotesk 700 (500 and 600 are never used) - another 52KB less. */
+@import '@fontsource/plus-jakarta-sans/latin-600.css';
+@import '@fontsource/plus-jakarta-sans/latin-700.css';
+@import '@fontsource/plus-jakarta-sans/latin-800.css';
+@import '@fontsource/space-grotesk/latin-700.css';

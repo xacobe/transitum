@@ -1,0 +1,28 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R_SOTRACO_1,SOTRACO,1,Naaba Koom - Terminus Station SOGEL-B,3
+R_SOTRACO_4,SOTRACO,4,Zone des écoles - Terminus Sandogo II,3
+R_SOTRACO_10,SOTRACO,10,Zone des écoles - Terminus CHU Tengandogo,3
+R_SOTRACO_2B,SOTRACO,2B,Terminus Balkuy - Naaba Koom,3
+R_SOTRACO_12,SOTRACO,12,Terminus Bonnheur ville - Zone des écoles,3
+R_SOTRACO_4B,SOTRACO,4B,Zone des écoles - Terminus Zagtouli,3
+R_SOTRACO_2,SOTRACO,2,Naaba Koom - Terminus Lycée Communal,3
+R_SOTRACO_6,SOTRACO,6,Terminus Koulwéoghin - Naaba Koom,3
+R_SOTRACO_6B,SOTRACO,6B,Naaba Koom - Terminus Péage,3
+R_SOTRACO_3,SOTRACO,3,Terminus Bissighin - Terminus Zone des écoles,3
+R_SOTRACO_3LSE,SOTRACO,3LSE,Cité Chinoise - SIAO,3
+R_SOTRACO_3LCI,SOTRACO,3LCI,Naaba Koom - Ancienne gare de Ziniaré,3
+R_SOTRACO_5LIC,SOTRACO,5LIC,Ouaga inter - Marché de Koubri,3
+R_SOTRACO_5,SOTRACO,5,Naaba Koom - Terminus Barogo,3
+R_SOTRACO_5b,SOTRACO,5b,Naaba Koom - Terminus barrage Kango,3
+R_SOTRACO_9,SOTRACO,9,Naaba Koom - Terminus Saaba,3
+R_SOTRACO_13,SOTRACO,13,Zone des écoles - Terminus Kamboinssin,3
+R_SOTRACO_16,SOTRACO,16,Naaba Koom - Terminus Eau maman,3
+R_SOTRACO_15,SOTRACO,15,TERMINUS BONHEUR VILLE - ZONE DES ECOLES,3
+R_SOTRACO_LSE1,SOTRACO,LSE1,Cité Kossodo - SIAO,3
+R_SOTRACO_LSE2,SOTRACO,LSE2,Cité universitaire Patte d'oie - Université JKZ,3
+R_SOTRACO_17,SOTRACO,17,BOASSA - ZONE DES ECOLES,3
+R_SOTRACO_IDS,SOTRACO,IDS,IDS - UJKZ,3
+R_SOTRACO_UTS_2,SOTRACO,UTS 2,SIAO - UTS,3
+R_SOTRACO_UTS_3,SOTRACO,UTS 3,CHU YALGADO,3
+R_SOTRACO_UTS_1,SOTRACO,UTS 1,Université JKZ - UTS,3
+R_SOTRACO_LIC_Saponé,SOTRACO,LIC Saponé,Gare routière - Commissariat de Police,3

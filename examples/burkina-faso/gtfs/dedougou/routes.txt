@@ -1,0 +1,2 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R_SOTRACO_LSE1,SOTRACO,LSE1,Université de Dédougou - Rond-point Nazi Boni,3

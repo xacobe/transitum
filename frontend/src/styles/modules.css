@@ -1,0 +1,345 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Shared BEM modules — blocks that appear in 3+ components/views.
+   Import order: after tokens.css and base.css.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Sheet ──────────────────────────────────────────────────────────────────
+   Primary content panel in list/detail views (green background card). */
+.sheet {
+  background: var(--color-sheet-bg);
+  padding: var(--space-2) var(--gutter) var(--space-4);
+}
+
+.sheet--scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sheet--flex {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Section header ─────────────────────────────────────────────────────────
+   Titled separator used above list groups (stops nearby, departures, etc.). */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.section-header__title {
+  font: var(--text-label-strong);
+  color: var(--color-text);
+}
+
+.section-header__note {
+  font: var(--text-caption-sm);
+  color: var(--color-muted);
+}
+
+.section-header--divided {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-3);
+}
+
+/* ── Row icon ───────────────────────────────────────────────────────────────
+   Colored 36×36 tile icon used in list rows and hint banners. */
+.row-icon {
+  width: var(--size-icon-tile);
+  height: var(--size-icon-tile);
+  border-radius: var(--radius-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.row-icon--accent {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.row-icon--field {
+  background: var(--color-chip-bg);
+  color: var(--color-muted);
+}
+
+.row-icon--info {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+/* ── Detail header ──────────────────────────────────────────────────────────
+   Back-button + title block used in StopView and LineView. */
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 14px var(--gutter);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.detail-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-header-text);
+}
+
+.detail-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-header__eyebrow {
+  font: var(--text-eyebrow);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.detail-header__title {
+  font: var(--text-title);
+  color: var(--color-header-text);
+}
+
+/* ── Hint banner ────────────────────────────────────────────────────────────
+   Informational banner with icon (offline update hint in ListHomeView). */
+.hint-banner {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+}
+
+.hint-banner__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hint-banner__icon--update {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.hint-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.hint-banner__title {
+  font: var(--text-label-strong);
+  color: var(--color-text);
+}
+
+.hint-banner__sub {
+  font: var(--text-caption-sm);
+  color: var(--color-muted);
+}
+
+.hint-banner__arrow {
+  font-size: 18px;
+  color: var(--color-muted);
+  align-self: center;
+}
+
+/* ── Bottom sheet ───────────────────────────────────────────────────────────
+   Fixed overlay modal anchored to the viewport bottom (ReportModal, etc.).
+   The scrim acts as both backdrop and flex positioning container; the sheet
+   panel does not need its own position:fixed. */
+.bottom-sheet__scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.bottom-sheet {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  box-shadow: var(--shadow-sheet);
+  padding: var(--space-5) var(--gutter) 32px;
+}
+
+.bottom-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.bottom-sheet__title {
+  font: var(--text-heading-sm);
+  color: var(--color-text);
+}
+
+.bottom-sheet__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-field);
+  color: var(--color-muted);
+}
+
+/* ── Button ─────────────────────────────────────────────────────────────────
+   Action buttons used in modals and forms. */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 1;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  font: var(--text-label-strong);
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+.btn--primary--outline {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border: solid 1px var(--color-accent-text);
+}
+
+.btn--secondary {
+  background: var(--color-field);
+  color: var(--color-text);
+}
+
+.btn:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* ── Form field ─────────────────────────────────────────────────────────────
+   Label + input pair used in forms (ReportModal, etc.). */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-field__label {
+  font: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.form-field__input {
+  background: var(--color-field);
+  color: var(--color-field-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font: var(--text-input); /* 16px intentional — prevents iOS auto-zoom */
+  width: 100%;
+  appearance: none;
+}
+
+.form-field__input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.form-field__input--textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* ── Notice ─────────────────────────────────────────────────────────────────
+   Contextual inline banner (info by default; --warn for caution messages,
+   --danger for errors). Color variants also set --notice-border, a plain
+   color with no opacity math of its own - --notice-lg is what actually
+   draws a border, so a plain .notice (no size modifier) stays borderless.
+   Size defaults to a compact single-line pill; add --lg for a bigger,
+   bordered card (icon + title + subtitle) - see .notice__icon/__body/
+   __title/__sub below. */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-caption-sm);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: var(--space-2);
+}
+
+.notice--info {
+  color: var(--color-info-text);
+  background: var(--color-info-bg);
+  --notice-border: color-mix(in srgb, var(--color-info-text) 35%, transparent);
+}
+
+.notice--warn {
+  color: var(--color-low-text);
+  background: var(--color-low-bg);
+  --notice-border: var(--color-fav-saved-border);
+}
+
+.notice--danger {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  --notice-border: color-mix(in srgb, var(--color-danger-text) 35%, transparent);
+}
+
+.notice--lg {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--notice-border, transparent);
+  border-radius: var(--radius-card);
+  margin-bottom: 12px;
+}
+
+.notice__icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.notice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notice__title {
+  font: var(--text-label-strong);
+}
+
+.notice__sub {
+  font: var(--text-caption);
+}

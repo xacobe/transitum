@@ -1,0 +1,329 @@
+/* ─ Primitive color palette ──────────────────────────────────────────────
+   Raw named color values organized by hue family. Semantic tokens below
+   reference these with var(--clr-*) instead of literal hex codes.
+   ─────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Green — brand + success states */
+  --clr-green-50:  #e3f3ea;   /* pale tint — good-bg light */
+  --clr-green-300: #6ff0b4;   /* light mint — good-text dark */
+  --clr-green-400: #4ee39a;   /* mint — accent dark, good-dot dark */
+  --clr-green-600: #0a8a5a;   /* mid — time-good light */
+  --clr-green-700: #0a7a50;   /* good-dot light */
+  --clr-green-800: #0a6b43;   /* good-text light */
+  --clr-green-900: #0a5c3f;   /* dark forest — accent/brand light */
+
+  /* Dark surfaces — dark-mode base layer (deep green-blacks) */
+  --clr-surf-50:  #eaf2ed;   /* foreground text on dark */
+  --clr-surf-700: #16241d;   /* surface (cards, sheets) dark */
+  --clr-surf-750: #14201b;   /* header-bg dark */
+  --clr-surf-800: #0e1a15;   /* map-bg, nav-bg dark */
+  --clr-surf-900: #0b1411;   /* app-bg, sheet-bg dark */
+  --clr-surf-950: #070d0b;   /* backdrop dark */
+  --clr-surf-960: #07120d;   /* accent-text, ribbon-text dark */
+
+  /* Light neutrals — backgrounds and text for light theme */
+  --clr-white:       #ffffff;
+  --clr-neutral-50:  #f5f7f3;   /* app-bg */
+  --clr-neutral-75:  #f3f5f1;   /* field */
+  --clr-neutral-80:  #f0f2ee;   /* chip-bg */
+  --clr-neutral-100: #eef1ea;   /* sheet-bg */
+  --clr-neutral-120: #e9ede7;   /* map-bg */
+  --clr-neutral-200: #d9ddd6;   /* backdrop */
+  --clr-neutral-300: #b6beb6;   /* separator */
+  --clr-neutral-400: #5c6e66;   /* sub-text — 4.82:1 on neutral-100 */
+  --clr-neutral-500: #4d5f57;   /* muted — 6.03:1 on neutral-100 */
+  --clr-neutral-510: #4c5e56;   /* placeholder */
+  --clr-neutral-515: #4c5d55;   /* nav-inactive */
+  --clr-neutral-550: #485a52;   /* chip-text */
+  --clr-neutral-700: #16241c;   /* body text */
+
+  /* Dark muted tones — ui elements in dark mode */
+  --clr-dark-400: #8aa399;   /* muted, chip-text dark */
+  --clr-dark-450: #7b9388;   /* placeholder dark */
+  --clr-dark-500: #6f8a7f;   /* sub, nav-inactive dark */
+  --clr-dark-600: #4a5a52;   /* separator dark */
+
+  /* Amber — low/warn states + brand indicators */
+  --clr-amber-50:  #fff7e3;   /* fav-saved-bg light */
+  --clr-amber-100: #fcf0d8;   /* low-bg light */
+  --clr-amber-200: #f2d98a;   /* fav-saved-border light */
+  --clr-amber-300: #f2c64d;   /* low-text/time-low dark */
+  --clr-amber-400: #f2b705;   /* brand-dot, map-pin */
+  --clr-amber-500: #e0a52e;   /* low-dot light */
+  --clr-amber-700: #8a5e00;   /* low-text/time-low light */
+  --clr-amber-900: #3a2c00;   /* ribbon-text light */
+
+  /* Red — danger/error states */
+  --clr-red-50:  #fce4e2;   /* danger-bg light */
+  --clr-red-300: #f3837f;   /* danger-text dark */
+  --clr-red-400: #ef5350;   /* danger-dot dark */
+  --clr-red-500: #c23b2f;   /* danger-dot light */
+  --clr-red-700: #a13328;   /* danger-text light */
+
+  /* Blue — info states */
+  --clr-blue-50:  #e0ecff;   /* info-bg light */
+  --clr-blue-300: #7eb8f7;   /* info-text dark */
+  --clr-blue-400: #5b9bf0;   /* info-dot dark */
+  --clr-blue-500: #2563b6;   /* info-dot light */
+  --clr-blue-700: #1e4598;   /* info-text light */
+}
+
+/* ─ Light theme ────────────────────────────────────────────────────────── */
+:root,
+:root[data-theme="light"] {
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, .18);
+  --shadow-sheet:    0 -10px 40px rgba(0, 0, 0, .25);
+  --color-scrim:     rgba(0, 0, 0, .45);
+
+  --color-backdrop:         var(--clr-neutral-200);
+  --color-app-bg:           var(--clr-neutral-50);
+  --color-sheet-bg:         var(--clr-neutral-100);
+  --color-text:             var(--clr-neutral-700);
+  --color-muted:            var(--clr-neutral-500);
+  --color-sub:              var(--clr-neutral-400);
+  --color-surface:          var(--clr-white);
+  --color-border:           rgba(0, 0, 0, .06);
+  --color-border-strong:    rgba(0, 0, 0, .1);
+  --color-field:            var(--clr-neutral-75);
+  --color-field-text:       var(--clr-neutral-700);
+  --color-placeholder:      var(--clr-neutral-510);
+  --color-accent:           var(--clr-green-900);
+  --color-accent-text:      var(--clr-white);
+  --color-brand-dot:        var(--clr-amber-400);
+  --color-map-bg:           var(--clr-neutral-120);
+  --color-map-road:         rgba(20, 40, 30, .10);
+  --color-map-route:        var(--clr-green-900);
+  --color-map-pin:          var(--clr-amber-400);
+  --color-walk-line:        #1c1f1e;
+  --map-tone: light;
+
+  /* Basemap (MapLibre GL, see frontend/src/map/style.js) - cartographic
+     colors, not UI chrome, so kept as their own literal values rather than
+     forced onto --clr-* primitives tuned for the app UI. */
+  --map-bg:                  #f5f2ec;
+  --map-water:                #aacde0;
+  --map-waterway:             #88b8d0;
+  --map-water-label:          #4a8fb0;
+  --map-road-label:           #999999;
+  --map-park:                 #d0e8c0;
+  --map-landuse-commercial:   #f5ead8;
+  --map-landuse-industrial:   #e8e0f0;
+  --map-landuse-school:       #f0e8d8;
+  --map-aeroway-fill:         #dce8f0;
+  --map-aeroway-runway:       #b8ccd8;
+  --map-aeroway-label:        #3a6880;
+  --map-park-label:           #4a7840;
+  --map-boundary:              #c0b0a0;
+  --map-road-minor-case:       #d8d4cc;
+  --map-road-minor-fill:       #ede9e0;
+  --map-road-secondary-case:   #ccc8be;
+  --map-road-secondary-fill:   #dedad0;
+  --map-road-primary-case:     #c8b870;
+  --map-road-primary-fill:     #e8d890;
+  --map-road-motorway-case:    #c8a030;
+  --map-road-motorway-fill:    #f0c848;
+  --map-place-city:            #1a1a1a;
+  --map-place-town:            #303030;
+  --map-place-village:         #555555;
+  --map-place-suburb:          #777777;
+  --map-label-halo:            rgba(245, 242, 236, .85);
+
+  --color-header-bg:        var(--clr-green-900);
+  --color-header-text:      var(--clr-white);
+  --color-header-field:     rgba(255, 255, 255, .13);
+  --color-header-div:       rgba(255, 255, 255, .18);
+  --color-nav-bg:           var(--clr-white);
+  --color-nav-border:       rgba(0, 0, 0, .07);
+  --color-nav-inactive:     var(--clr-neutral-515);
+  --color-nav-active:       var(--clr-green-900);
+  --color-good-bg:          var(--clr-green-50);
+  --color-good-text:        var(--clr-green-800);
+  --color-good-dot:         var(--clr-green-700);
+  --color-low-bg:           var(--clr-amber-100);
+  --color-low-text:         var(--clr-amber-700);
+  --color-low-dot:          var(--clr-amber-500);
+  --color-danger-bg:        var(--clr-red-50);
+  --color-danger-text:      var(--clr-red-700);
+  --color-danger-dot:       var(--clr-red-500);
+  --color-info-bg:          var(--clr-blue-50);
+  --color-info-text:        var(--clr-blue-700);
+  --color-info-dot:         var(--clr-blue-500);
+  /* Aliases for HomeView.vue/SettingsView.vue's var(--color-warning, #hex)/
+     var(--color-error, #hex) fallback usages - previously undefined, so the
+     literal fallback always won even in dark mode. Same hue family as
+     low/danger, not new colors. */
+  --color-warning:          var(--clr-amber-500);
+  --color-error:            var(--clr-red-500);
+  --color-chip-bg:          var(--clr-neutral-80);
+  --color-chip-text:        var(--clr-neutral-550);
+  --color-ribbon-bg:        var(--clr-amber-400);
+  --color-ribbon-text:      var(--clr-amber-900);
+  --color-time-good:        var(--clr-green-600);
+  --color-time-low:         var(--clr-amber-700);
+  --color-sep:              var(--clr-neutral-300);
+  --color-fav-saved-bg:     var(--clr-amber-50);
+  --color-fav-saved-border: var(--clr-amber-200);
+  --color-fav-saved-text:   var(--clr-amber-700);
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, .05);
+  --shadow-phone: 0 24px 70px rgba(0, 0, 0, .22), 0 6px 18px rgba(0, 0, 0, .1);
+}
+
+/* ─ Dark theme ─────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --color-backdrop:         var(--clr-surf-950);
+  --color-app-bg:           var(--clr-surf-900);
+  --color-sheet-bg:         var(--clr-surf-900);
+  --color-text:             var(--clr-surf-50);
+  --color-muted:            var(--clr-dark-400);
+  --color-sub:              var(--clr-dark-500);
+  --color-surface:          var(--clr-surf-700);
+  --color-border:           rgba(255, 255, 255, .07);
+  --color-border-strong:    rgba(255, 255, 255, .12);
+  --color-field:            rgba(255, 255, 255, .05);
+  --color-field-text:       var(--clr-surf-50);
+  --color-placeholder:      var(--clr-dark-450);
+  --color-accent:           var(--clr-green-400);
+  --color-accent-text:      var(--clr-surf-960);
+  --color-brand-dot:        var(--clr-surf-900);
+  --color-map-bg:           var(--clr-surf-800);
+  --color-map-road:         rgba(120, 210, 170, .10);
+  --color-map-route:        var(--clr-green-400);
+  --color-map-pin:          var(--clr-amber-400);
+  --color-walk-line:        #d4dbd7;
+  --map-tone: dark;
+
+  /* Basemap (MapLibre GL, see frontend/src/map/style.js) */
+  --map-bg:                  #181c1b;
+  --map-water:                #18303f;
+  --map-waterway:             #162c38;
+  --map-water-label:          #4a7888;
+  --map-road-label:           #6a7a78;
+  --map-park:                 #18281a;
+  --map-landuse-commercial:   #26261a;
+  --map-landuse-industrial:   #1e1e2a;
+  --map-landuse-school:       #242018;
+  --map-aeroway-fill:         #1a2830;
+  --map-aeroway-runway:       #2a3c48;
+  --map-aeroway-label:        #6a9ab0;
+  --map-park-label:           #6aaa60;
+  --map-boundary:              #3a3028;
+  --map-road-minor-case:       #1e2422;
+  --map-road-minor-fill:       #252b29;
+  --map-road-secondary-case:   #282e2c;
+  --map-road-secondary-fill:   #323836;
+  --map-road-primary-case:     #3e3c28;
+  --map-road-primary-fill:     #4a4830;
+  --map-road-motorway-case:    #50481e;
+  --map-road-motorway-fill:    #5c5420;
+  --map-place-city:            #dce8e4;
+  --map-place-town:            #b8c8c4;
+  --map-place-village:         #8a9a98;
+  --map-place-suburb:          #6a7a78;
+  --map-label-halo:            rgba(24, 28, 27, .85);
+
+  --color-header-bg:        var(--clr-surf-750);
+  --color-header-text:      var(--clr-surf-50);
+  --color-header-field:     rgba(255, 255, 255, .06);
+  --color-header-div:       rgba(255, 255, 255, .1);
+  --color-nav-bg:           var(--clr-surf-800);
+  --color-nav-border:       rgba(255, 255, 255, .07);
+  --color-nav-inactive:     var(--clr-dark-500);
+  --color-nav-active:       var(--clr-green-400);
+  --color-good-bg:          rgba(78, 227, 154, .16);
+  --color-good-text:        var(--clr-green-300);
+  --color-good-dot:         var(--clr-green-400);
+  --color-low-bg:           rgba(242, 183, 5, .16);
+  --color-low-text:         var(--clr-amber-300);
+  --color-low-dot:          var(--clr-amber-400);
+  --color-danger-bg:        rgba(239, 83, 80, .16);
+  --color-danger-text:      var(--clr-red-300);
+  --color-danger-dot:       var(--clr-red-400);
+  --color-info-bg:          rgba(91, 155, 240, .16);
+  --color-info-text:        var(--clr-blue-300);
+  --color-info-dot:         var(--clr-blue-400);
+  --color-warning:          var(--clr-amber-400);
+  --color-error:            var(--clr-red-400);
+  --color-chip-bg:          rgba(255, 255, 255, .06);
+  --color-chip-text:        var(--clr-dark-400);
+  --color-ribbon-bg:        var(--clr-green-400);
+  --color-ribbon-text:      var(--clr-surf-960);
+  --color-time-good:        var(--clr-green-400);
+  --color-time-low:         var(--clr-amber-300);
+  --color-sep:              var(--clr-dark-600);
+  --color-fav-saved-bg:     rgba(242, 183, 5, .35);
+  --color-fav-saved-border: rgba(242, 183, 5, .35);
+  --color-fav-saved-text:   var(--clr-amber-300);
+  --shadow-card:     0 1px 3px rgba(0, 0, 0, .2);
+  --shadow-phone:    0 24px 70px rgba(0, 0, 0, .55), 0 6px 18px rgba(0, 0, 0, .35);
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, .45);
+  --shadow-sheet:    0 -10px 40px rgba(0, 0, 0, .6);
+  --color-scrim:     rgba(0, 0, 0, .6);
+}
+
+/* ─ Layout, type scale and design tokens (theme-neutral) ─────────────────
+   These never change between themes. ──────────────────────────────────── */
+:root {
+  --font-ui:      'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-figures: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Every screen was designed for a phone-width column — past this
+     width, bars (header, bottom nav, search input) keep their background
+     full-bleed but their content centered in a column this wide. */
+  --content-max-width: 624px;
+
+  /* ─ Radius ────────────────────────────────────────────────────────────── */
+  --radius-xs:     3px;    /* chip corners, small marker pin */
+  --radius-sm:     8px;    /* notice badges, small chips */
+  --radius-md:    12px;    /* input fields */
+  --radius-card:  14px;    /* list rows, surface cards */
+  --radius-lg:    16px;    /* larger cards and setting groups */
+  --radius-map:   18px;    /* map panels */
+  --radius-search: 22px;   /* search card */
+  --radius-sheet: 24px;    /* bottom sheets */
+  --radius-icon:  10px;    /* icon tiles (36×36) */
+  --radius-full:  9999px;  /* pills, circles */
+
+  /* ─ Type scale ────────────────────────────────────────────────────────── */
+  /* rem values respect the user's browser font-size preference (accessibility).
+     Fractions are exact: e.g. 0.5625rem = 9/16 px. */
+  --text-eyebrow:      700  0.5625rem/1   var(--font-ui);
+  --text-caption-sm:   600  0.6875rem/1.3 var(--font-ui);
+  --text-caption:      600  0.75rem/1.3   var(--font-ui);
+  --text-label:        600  0.8125rem/1.4 var(--font-ui);
+  --text-label-strong: 700  0.8125rem/1.4 var(--font-ui);
+  --text-body:         600  0.875rem/1.4  var(--font-ui);
+  --text-heading-sm:   800  1rem/1.2      var(--font-ui);
+  --text-input:        600  1rem/1.4      var(--font-ui); /* 1rem intentional — prevents iOS zoom */
+  --text-title:        800  1.125rem/1.2  var(--font-ui);
+  --text-page-title:   800  1.5rem/1.1    var(--font-ui);
+  --tracking-wide: 0.1em;
+
+  /* ─ Spacing / geometry ────────────────────────────────────────────────── */
+  --space-1:        4px;
+  --space-2:        8px;
+  --space-3:       12px;
+  --space-4:       16px;
+  --space-5:       20px;
+  --gutter:        16px;  /* page side padding */
+  --size-icon-tile: 36px;
+
+  /* ─ Z-index ───────────────────────────────────────────────────────────── */
+  --z-raised:  10;
+  --z-sticky:  50;
+  --z-nav:    100;
+  --z-sheet:  150;
+  --z-modal:  200;
+
+  /* ─ Motion ────────────────────────────────────────────────────────────── */
+  --duration-fast:   0.12s;
+  --duration-normal: 0.2s;
+  --ease-default:    cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─ Misc ──────────────────────────────────────────────────────────────── */
+  --opacity-disabled: 0.5;
+  --ring-selected: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent);
+
+  /* Generic (non-route) bus stop marker on the map (MiniMap.vue) - same in
+     both themes, unlike --color-accent/--color-map-pin which flip. */
+  --color-stop-dot: #2563b6;
+}

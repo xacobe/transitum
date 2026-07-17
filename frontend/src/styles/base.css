@@ -1,0 +1,156 @@
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background: var(--color-backdrop);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-app-bg);
+  overflow: hidden;
+}
+
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* The actual width cap goes on a wrapper *inside* .screen-content, not
+   on .screen-content itself - capping the scrollable element would
+   also cap its background (pattern-tile-bg would stop short of the
+   viewport edges) and push the scrollbar to the middle of the screen
+   instead of its right edge. */
+.content-inner {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* Tiled decorative pattern for screens that would otherwise show a flat
+   background (e.g. Liste) - webp by default, png fallback for browsers
+   that don't support it. The plain url() is declared first so browsers
+   that don't understand image-set() at all just keep using it. */
+/* ── Body text ─────────────────────────────────────────────────────────────
+   Standard readable text for explanatory / descriptive content (not UI
+   labels). Used wherever the copy is a sentence or more: help text,
+   onboarding, descriptions. Mirrors the styleguide's intro paragraph. */
+.body-text {
+  font: var(--text-label);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.pattern-tile-bg {
+  background-image: url('/images/pattern-tile.png');
+  background-image: image-set(
+    url('/images/pattern-tile.webp') type('image/webp'),
+    url('/images/pattern-tile.png') type('image/png')
+  );
+  background-repeat: repeat;
+}
+
+/* ── Segmented control ─────────────────────────────────────────────────────
+   Pill-shaped toggle used in LinesView, LineView, and results views.
+   Each component adds its own width/margin on top of this base. */
+.segmented {
+  display: flex;
+  background: var(--color-chip-bg);
+  border-radius: var(--radius-full);
+  padding: 2px;
+}
+
+.segmented button {
+  border-radius: var(--radius-full);
+  font: var(--text-caption-sm);
+  font-weight: 700;
+  color: var(--color-chip-text);
+}
+
+.segmented button.active {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+/* Inset variant: fills the content column with 16px gutters on each side.
+   Used in LineView and LinesView where the control sits below the map. */
+.segmented--inset {
+  width: calc(100% - 2 * var(--gutter));
+  max-width: calc(var(--content-max-width) - 2 * var(--gutter));
+  margin: 0 auto var(--space-3);
+}
+
+.segmented--inset button {
+  flex: 1;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+/* ── Status text ────────────────────────────────────────────────────────────
+   Centered muted label for loading / empty states. */
+.status-text {
+  font: var(--text-label);
+  color: var(--color-muted);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ── Offline notice (results) ───────────────────────────────────────────────
+   Info banner shown when route results are from the offline Minotor engine. */
+.offline-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-caption-sm);
+  color: var(--color-info-text);
+  background: var(--color-info-bg);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: var(--space-2);
+}
+
+/* ── Favorite button (inline icon) ─────────────────────────────────────────
+   Small star icon button used in list rows (LinesView, LineView). */
+.fav-btn {
+  display: flex;
+  color: var(--color-low-dot);
+}
+
+.fav-btn.saved {
+  color: var(--color-low-dot);
+}

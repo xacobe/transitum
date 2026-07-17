@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview",
+    "generate-transit-data": "node ../pipeline/generate_transit_data.mjs"
+  },
+  "dependencies": {
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
+    "@tabler/icons": "^3.44.0",
+    "@tabler/icons-vue": "^3.44.0",
+    "maplibre-gl": "^5.24.0",
+    "minisearch": "^7.2.0",
+    "minotor": "^11.2.3",
+    "pinia": "^3.0.4",
+    "pmtiles": "^4.4.1",
+    "vite-plugin-pwa": "^1.3.0",
+    "vue": "^3.5.38",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "@intlify/unplugin-vue-i18n": "^11.2.4",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "sharp": "^0.35.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.0",
+    "vue-tsc": "^3.3.6"
+  }
+}

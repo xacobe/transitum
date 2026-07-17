@@ -1,0 +1,81 @@
+services:
+  routing-serve:
+    build: ./services/routing
+    volumes:
+      - ./data/cities:/app/data:ro
+      - ./config/cities.json:/config/cities.json:ro
+    environment:
+      DATA_DIR: /app/data
+      CITIES_JSON: /config/cities.json
+      PORT: "3001"
+      # Unset by default: serves every city in cities.json. Only set this to
+      # scope one routing-serve instance to a subset (e.g. per-region
+      # instances in a larger deployment) - see services/routing/index.js.
+      # CITIES: "slug-a,slug-b"
+    restart: unless-stopped
+    # In production only nginx ("web") needs to reach this - same compose
+    # network, resolved by service name, no host port required. Published
+    # here anyway, bound to loopback only, so `make dev` (frontend running
+    # on the host, not in a container) can proxy /routing/* to it too - see
+    # frontend/vite.config.js's server.proxy.
+    ports:
+      - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  umami-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      - umami-db
+    restart: unless-stopped
+
+  pocketbase:
+    build: ./services/pocketbase
+    volumes:
+      - pocketbase-data:/pb/pb_data
+    ports:
+      - "127.0.0.1:8090:8090"
+    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./data/cities:/var/data/cities:ro
+      - ./deploy/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    environment:
+      # Rendered into /etc/nginx/conf.d/default.conf by the official image's
+      # entrypoint (envsubst over every *.template file, restricted to
+      # variables that exist in the container env - see the template's own
+      # header comment for why nginx's own $host/$remote_addr/etc. are safe).
+      DOMAIN: "${DOMAIN}"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      routing-serve:
+        condition: service_healthy
+
+volumes:
+  umami-db-data:
+  pocketbase-data:

@@ -1,0 +1,43 @@
+/* Copy to config/theme.css to re-brand this deployment's colors/fonts
+   without editing any framework file. Loaded last (frontend/src/main.ts),
+   after frontend/src/styles/tokens.css - only declare the custom
+   properties you actually want to change; everything else keeps the
+   framework's default. See frontend/src/styles/tokens.css for the full
+   list of what's available and their default values (primitives, then
+   light/dark semantic tokens, then the theme-neutral type/spacing/motion
+   scale at the bottom).
+
+   Not read by anything except the Vite build (frontend/vite.config.js's
+   "deployment-theme" plugin) - a missing config/theme.css is not an
+   error, the app just uses the framework defaults untouched. */
+
+:root {
+  /* App accent color (buttons, active states, brand mark) - light theme. */
+  /* --color-accent: #8b0000; */
+
+  /* UI font. Swapping this away from the bundled Plus Jakarta Sans also
+     needs its own @fontsource import and the preload-fonts plugin's regex
+     in vite.config.js updated to match your font's filename instead. */
+  /* --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; */
+}
+
+:root[data-theme="dark"] {
+  /* Same accent, dark-theme variant - these almost always need to differ
+     from the light one for contrast (see tokens.css's own light/dark pairs). */
+  /* --color-accent: #ff6b6b; */
+}
+
+/* Basemap (MapLibre GL, see frontend/src/map/style.js) - also themeable,
+   also split into :root and :root[data-theme="dark"] blocks. Full list of
+   --map-* properties (background, water, each road class, place labels,
+   etc.) is in tokens.css; most deployments will only ever want --map-bg
+   and --map-route-ish colors close to their brand, not every road-class
+   hue. */
+/*
+:root {
+  --map-bg: #f0ece0;
+}
+:root[data-theme="dark"] {
+  --map-bg: #1a1815;
+}
+*/
