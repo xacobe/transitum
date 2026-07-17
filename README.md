@@ -451,6 +451,19 @@ virtual module, so the framework never needs to touch it and a fresh clone
 with no `theme.css` just uses the defaults. See
 `frontend/src/styles/tokens.css` for the full list of overridable tokens.
 
+**Per-line colors** — each line's badge color resolves in this order: an
+explicit override in `config/line-colors.json` (see
+`config/line-colors.example.jsonc`), then the source GTFS's own official
+`route_color` if the city opted in (`cities.json`'s `useOfficialLineColors`),
+then a deterministic hash-based fallback palette so every line still gets a
+stable, distinct color with zero configuration. `make line-colors CITY=slug`
+seeds a starting entry per line (whatever color it shows today) into
+`config/line-colors.json` — edit or delete whichever you want; re-running it
+only ever fills in lines that don't have an entry yet, never touches what
+you've already changed. Framework code never writes to this file after the
+one-time seed, so it's yours to commit to your own `origin` like
+`config/cities.json`.
+
 **Adding behavior** (a new view, extra nav item, a different report/analytics
 backend, …) — copy `frontend/src/custom/index.example.ts` to
 `frontend/src/custom/index.ts` and fill in what you need:

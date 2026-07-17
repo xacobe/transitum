@@ -33,7 +33,7 @@
       "nearbyRadiusMeters": 1500,
       "offlineMb": 10,
       "defaultAgencyId": "UNKNOWN",
-      "useOfficialLineColors": false,
+      "useOfficialLineColors": true,
       "transitSource": {
         "type": "official-gtfs",
         "url": "https://datos.vigo.org/data/transporte/gtfs_vigo.zip"

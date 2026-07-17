@@ -7,7 +7,7 @@ COMPOSE := docker compose --env-file config/.env
 # but every registry entry still needs its data generated/synced).
 CITIES := $(shell python3 -c "import json; print(' '.join(c['slug'] for c in json.load(open('config/cities.json')).get('cities', [])))" 2>/dev/null)
 
-.PHONY: help dev build deploy data data-common pois tiles install add-city import-gtfs icons use-example
+.PHONY: help dev build deploy data data-common pois tiles install add-city import-gtfs icons use-example line-colors
 
 help:
 	@echo ""
@@ -23,6 +23,11 @@ help:
 	@echo "                         operator publishes one (see config/cities.example.jsonc)"
 	@echo "  make pois             Regenerate POIs for all active cities (from config/.env)"
 	@echo "  make tiles CITY=slug  Generate vector tiles (.pmtiles) for one city"
+	@echo ""
+	@echo "  make line-colors CITY=slug   Seed config/line-colors.json with a starting color"
+	@echo "                         per line (official GTFS color if published, else the"
+	@echo "                         framework's own fallback) - edit/delete entries freely,"
+	@echo "                         re-running only ever fills in lines still missing one."
 	@echo ""
 	@echo "  make icons            (Re)generate the favicon/logo/PWA icons from VITE_THEME_COLOR"
 	@echo ""
@@ -44,6 +49,16 @@ ifndef COUNTRY
 	$(error COUNTRY is required. Usage: make use-example COUNTRY=spain)
 endif
 	python3 pipeline/use_example.py --country $(COUNTRY) $(if $(CITY),--city $(CITY),)
+
+# Seeds config/line-colors.json with a starting color per line of one city -
+# see pipeline/seed_line_colors.py's docstring for exactly what "starting
+# color" means and why re-running it is always safe.
+# Usage: make line-colors CITY=vigo
+line-colors:
+ifndef CITY
+	$(error CITY is required. Usage: make line-colors CITY=vigo)
+endif
+	python3 pipeline/seed_line_colors.py --city $(CITY)
 
 # Regenerate JSON/binaries from whatever GTFS already sits in
 # data/gtfs/<country>/<slug>/ - shared by both `data` (OSM path) and
