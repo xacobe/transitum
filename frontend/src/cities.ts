@@ -7,11 +7,35 @@
 // file at build time - `eager: true` because this is small registry data
 // needed synchronously at startup, not something worth code-splitting.
 import countriesFile from '../../config/cities/_countries.json'
+// Per-line color overrides (config/line-colors.json, see its .example.jsonc)
+// - same loading mechanism, same "framework reads it, ships an empty
+// default, deployment owns the real content" story as config/cities/ itself.
+// Seeded by `make line-colors CITY=slug` (pipeline/seed_line_colors.py),
+// then hand-edited freely.
+import lineColorsRegistry from '../../config/line-colors.json'
 import type { CityConfigRaw, CityConfig, CountryConfig } from '@/types'
 
 interface CountriesFile {
   countries: Record<string, CountryConfig>
   defaultCity: string
+}
+
+interface LineColorOverride {
+  bg: string
+  text: string
+}
+
+const typedLineColors = lineColorsRegistry as unknown as Record<string, Record<string, LineColorOverride>>
+
+// Checked before both the official-GTFS color (cities.json's
+// useOfficialLineColors) and the framework's hash-based fallback palette -
+// see useLineColor.ts. Keyed by shortName alone, not lineKey(agencyId,
+// shortName): every city this framework has shipped so far has exactly one
+// agency (see useAgencies.ts), and a plain shortName is far easier to
+// hand-edit in the JSON file than a composite key. Revisit if a real city
+// ever has two agencies sharing a line number.
+export function getLineColorOverride(citySlug: string, shortName: string): LineColorOverride | null {
+  return typedLineColors[citySlug]?.[shortName] ?? null
 }
 
 const cityModules = import.meta.glob<{ default: CityConfigRaw }>(

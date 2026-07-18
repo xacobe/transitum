@@ -1,0 +1,37 @@
+// Reference/documentation copy of the line-colors schema — NOT loaded by
+// anything (frontend/src/cities.ts and pipeline/seed_line_colors.py both
+// read config/line-colors.json, your project's real, live overrides). This
+// file uses // comments and is not strict JSON — copy what you need into
+// config/line-colors.json by hand instead.
+//
+// A per-line color override, keyed by city slug then by the line's
+// shortName (routes.json's "shortName", the same value shown in
+// LineBadge/StopRow/results). Always wins over everything else - checked
+// before cities.json's useOfficialLineColors and before the framework's
+// own hash-based fallback palette (frontend/src/composables/useLineColor.ts).
+// Both colors are used as-is in light AND dark theme (same as an official
+// GTFS route_color) - there's no separate dark-mode variant, unlike the
+// hash palette.
+//
+// Lines you don't list here keep using the normal resolution order
+// (official GTFS color if useOfficialLineColors is true and the feed has
+// one, else the automatic hash palette) - you only need an entry for a
+// line you actually want to override.
+//
+// Getting a starting point instead of hand-picking every hex code:
+//   make line-colors CITY=vigo
+// seeds one entry per line that doesn't already have one, using whatever
+// color it shows today (official if available, else the same hash-palette
+// color the frontend would compute) - edit/delete whichever entries you
+// want, re-running the command only ever fills in what's still missing
+// (new lines added later), never touches or overwrites what you've already
+// hand-edited.
+
+{
+  "example-city-a": {
+    // Deliberately not this line's official GTFS color (or not on an
+    // official-gtfs city at all) - a hand-picked brand color instead.
+    "7": { "bg": "#7c3aed", "text": "#ffffff" },
+    "12": { "bg": "#0a8a5a", "text": "#ffffff" }
+  }
+}

@@ -3,6 +3,8 @@ import { useThemeStore } from '@/stores/theme'
 import { useCityStore } from '@/stores/city'
 import { useAgencies, lineKey } from '@/composables/useAgencies'
 import { loadCityRoutes } from '@/services/cityData'
+import { getLineColorOverride } from '@/cities'
+import { contrastingTextColor } from '@/services/color'
 
 // 12 pairs [bgLight, textLight, bgDark, textDark] with good contrast in
 // both themes. The real lines are indexed by hash, no manual per-line table.
@@ -54,8 +56,11 @@ export function useLineColor() {
       if (!route.color) continue
       map.set(lineKey(route.agencyId, route.shortName), {
         bg: route.color,
-        // GTFS default when route_text_color is unset: black.
-        text: route.textColor ?? '#000000',
+        // Computed, not route.textColor - real feeds set it unreliably
+        // (Vitrasa's is "000000" for every line regardless of how dark
+        // route_color is), so a declared value can't be trusted for
+        // contrast. See contrastingTextColor's own comment.
+        text: contrastingTextColor(route.color),
       })
     }
     officialColors.value = map
@@ -66,6 +71,11 @@ export function useLineColor() {
   // one agency — while there's only one (today, always), the hash stays
   // exactly `shortName` so every line keeps today's color unchanged.
   function colorFor(shortName: string, agencyId: string | null): { bg: string; text: string } {
+    // config/line-colors.json - a deployment's explicit per-line choice -
+    // always wins, whether or not useOfficialLineColors is even on.
+    const override = getLineColorOverride(city.activeSlug, shortName)
+    if (override) return override
+
     const official = officialColors.value.get(lineKey(agencyId, shortName))
     if (official) return official
 
