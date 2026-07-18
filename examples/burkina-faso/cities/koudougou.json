@@ -1,0 +1,80 @@
+{
+  "slug": "koudougou",
+  "country": "burkina-faso",
+  "displayName": "Koudougou",
+  "feedId": "koudougou",
+  "center": {
+    "lat": 12.2515,
+    "lon": -2.3652
+  },
+  "searchBbox": {
+    "minLon": -2.85,
+    "minLat": 11.8,
+    "maxLon": -1.9,
+    "maxLat": 12.6
+  },
+  "tileBbox": {
+    "minLon": -2.656,
+    "minLat": 12.011,
+    "maxLon": -2.177,
+    "maxLat": 12.367
+  },
+  "tileMinzoom": 8,
+  "nearbyRadiusMeters": 1500,
+  "offlineMb": 7,
+  "defaultAgencyId": "UNKNOWN",
+  "agencies": [
+    {
+      "agencyId": "SOTRACO",
+      "agencyName": "SOTRACO",
+      "agencyUrl": "https://sotraco.bf",
+      "agencyTimezone": "Africa/Ouagadougou",
+      "agencyLang": "fr"
+    }
+  ],
+  "operatorAliases": {
+    "sotraco": "SOTRACO"
+  },
+  "schedule": {
+    "averageSpeedKmh": 18.0,
+    "dwellSeconds": 20,
+    "serviceStart": "05:30:00",
+    "serviceEnd": "21:30:00",
+    "frequencyPeriods": [
+      {
+        "start": "05:30:00",
+        "end": "06:00:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      },
+      {
+        "start": "06:00:00",
+        "end": "18:00:00",
+        "headwaySeconds": 1200,
+        "reliability": "high"
+      },
+      {
+        "start": "18:00:00",
+        "end": "19:30:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      },
+      {
+        "start": "19:30:00",
+        "end": "21:30:00",
+        "headwaySeconds": 2700,
+        "reliability": "low"
+      }
+    ]
+  },
+  "osmPatches": {
+    "areaName": "Koudougou",
+    "duplicateRelationIds": [
+      13004057,
+      13004368
+    ],
+    "refAliases": {
+      "LIC TENADO": "LIC Tenado"
+    }
+  }
+}

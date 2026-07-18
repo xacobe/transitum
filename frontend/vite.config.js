@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
-import { createReadStream, statSync, existsSync, readFileSync } from 'node:fs'
+import { createReadStream, statSync, existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve, extname, dirname } from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -11,16 +11,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, resolve(__dirname, '../config'), 'VITE_')
 
-  // The framework ships with an empty config/cities.json - the app itself
+  // The framework ships with an empty config/cities/ - the app itself
   // fails loudly at runtime (frontend/src/cities.ts), but that only shows
   // up in the browser console. Warn here too so `make dev`/`make build`
   // surfaces it immediately in the terminal instead.
-  const citiesJsonPath = resolve(__dirname, '../config/cities.json')
-  if (existsSync(citiesJsonPath)) {
-    const registry = JSON.parse(readFileSync(citiesJsonPath, 'utf-8'))
-    if (!registry.cities?.length) {
+  const citiesDirPath = resolve(__dirname, '../config/cities')
+  if (existsSync(citiesDirPath)) {
+    const hasCityFile = readdirSync(citiesDirPath).some(
+      (f) => f.endsWith('.json') && f !== '_countries.json',
+    )
+    if (!hasCityFile) {
       console.warn(
-        '\n⚠️  config/cities.json has no cities configured yet - the app will fail to load.\n' +
+        '\n⚠️  config/cities/ has no cities configured yet - the app will fail to load.\n' +
         '   Try a working example: make use-example COUNTRY=spain (or COUNTRY=burkina-faso)\n' +
         '   Or add your own: make add-city ARGS="--city ... --country ... ..."\n',
       )
@@ -281,7 +283,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
-      // Allows imports from outside frontend/: config/cities.json (city
+      // Allows imports from outside frontend/: config/cities/ (city
       // registry shared with pipeline/cities.py) and data/cities/ (city
       // data files served by the dev middleware above).
       fs: {

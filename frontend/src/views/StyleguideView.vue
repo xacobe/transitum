@@ -232,9 +232,9 @@ const sampleLegBus = {
 
 // Deliberately not faked, so this card hits useStopDetail()/OTP exactly
 // like it does in the app - but that means it only actually resolves when
-// a city with this stop ID is configured (see config/cities.json). Swap
+// a city with this stop ID is configured (see config/cities/). Swap
 // for a real stop ID from whatever example/city you have installed
-// (`make use-example NAME=...`) to see this card populated; it degrades
+// (`make use-example COUNTRY=...`) to see this card populated; it degrades
 // to an empty/error state otherwise, which is itself a fine thing to see
 // on this page.
 const realStop: Stop & { distanceMeters?: number } = { id: 'example-city:OSM0000000000', name: 'Example Stop', lat: 12.3714, lon: -1.5197 }

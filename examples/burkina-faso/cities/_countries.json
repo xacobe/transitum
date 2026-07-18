@@ -1,0 +1,10 @@
+{
+  "countries": {
+    "burkina-faso": {
+      "displayName": "Burkina Faso",
+      "countryCode": "BF",
+      "geofabrikUrl": "https://download.geofabrik.de/africa/burkina-faso-latest.osm.pbf"
+    }
+  },
+  "defaultCity": "ouagadougou"
+}

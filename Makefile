@@ -4,8 +4,10 @@ COMPOSE := docker compose --env-file config/.env
 # All cities declared in the registry - the committed source of truth
 # (VITE_CITIES in config/.env is a separate, optional *frontend build-time*
 # filter - narrows which of these actually ship in the picker/city-detect,
-# but every registry entry still needs its data generated/synced).
-CITIES := $(shell python3 -c "import json; print(' '.join(c['slug'] for c in json.load(open('config/cities.json')).get('cities', [])))" 2>/dev/null)
+# but every registry entry still needs its data generated/synced). One file
+# per city under config/cities/ (see pipeline/cities.py) - _countries.json
+# is the shared country registry, not a city, hence the name filter below.
+CITIES := $(shell python3 -c "import glob,json,os; print(' '.join(json.load(open(p))['slug'] for p in glob.glob('config/cities/*.json') if os.path.basename(p) != '_countries.json'))" 2>/dev/null)
 
 .PHONY: help dev build deploy data data-common pois tiles install add-city import-gtfs icons use-example
 
@@ -16,11 +18,11 @@ help:
 	@echo "  make build            Build frontend for production"
 	@echo ""
 	@echo "  make use-example COUNTRY=spain    Add a working example country (see examples/) - no OSM/GTFS fetch needed"
-	@echo "  make add-city         Generate a starter cities.json entry for a new city"
+	@echo "  make add-city         Generate a starter config/cities/<slug>.json entry for a new city"
 	@echo "  make data CITY=slug   Regenerate all data from OSM for one city (GTFS + JSON + binaries)"
 	@echo "  make import-gtfs CITY=slug URL=https://...   Same, but from an official GTFS feed"
 	@echo "                         instead of reconstructing from OSM - prefer this whenever the"
-	@echo "                         operator publishes one (see config/cities.example.jsonc)"
+	@echo "                         operator publishes one (see config/cities/example-city-b.example.jsonc)"
 	@echo "  make pois             Regenerate POIs for all active cities (from config/.env)"
 	@echo "  make tiles CITY=slug  Generate vector tiles (.pmtiles) for one city"
 	@echo ""
@@ -37,7 +39,7 @@ add-city:
 	@python3 pipeline/add_city.py $(ARGS)
 
 # Adds a working example country (config + pre-generated data, see examples/)
-# to config/cities.json and data/ - no OSM/live-GTFS fetch needed.
+# to config/cities/ and data/ - no OSM/live-GTFS fetch needed.
 # Usage: make use-example COUNTRY=spain  (or COUNTRY=burkina-faso CITY=ouagadougou)
 use-example:
 ifndef COUNTRY
@@ -58,7 +60,7 @@ endif
 	python3 pipeline/osm_to_pois.py --city $(CITY)
 	cd frontend && npm run generate-transit-data
 
-# Import an official GTFS feed (see config/cities.example.toml's
+# Import an official GTFS feed (see config/cities/example-city-b.example.jsonc's
 # transitSource for how to record the URL for later re-syncs) instead of
 # reconstructing one from OSM - use whenever the operator publishes one.
 # Usage: make import-gtfs CITY=vigo URL=https://datos.vigo.org/data/transporte/gtfs_vigo.zip
@@ -110,7 +112,7 @@ endif
 	python3 pipeline/osm_to_gtfs.py --city $(CITY)
 	$(MAKE) data-common CITY=$(CITY)
 
-# Regenerate only POIs for every city in config/cities.json.
+# Regenerate only POIs for every city in config/cities/.
 pois:
 	@for city in $(CITIES); do \
 		echo "── POIs $$city ──"; \

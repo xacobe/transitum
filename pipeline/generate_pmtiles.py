@@ -8,8 +8,9 @@ Usage:
 Output: data/cities/<slug>/tiles.pmtiles
 
 The OSM PBF for each city's country is read from data/.cache/<country>-latest.osm.pbf.
-If the file is missing and the country has a 'geofabrikUrl' in config/cities.json,
-it is downloaded automatically. Otherwise an error is printed with instructions.
+If the file is missing and the country has a 'geofabrikUrl' in
+config/cities/_countries.json, it is downloaded automatically. Otherwise an
+error is printed with instructions.
 
 Requires one of:
   - Java 17+ on PATH  (check: java -version)
@@ -29,11 +30,12 @@ but add negligible size to the file.
 """
 
 import argparse
-import json
 import sys
 import time
 import urllib.request
 from pathlib import Path
+
+from cities import CITIES, COUNTRIES
 
 REPO_ROOT = Path(__file__).parent.parent
 TOOLS_DIR  = Path(__file__).parent / "tools"
@@ -120,7 +122,7 @@ def ensure_osm_pbf(pbf_path: Path, geofabrik_url: str | None, country_slug: str)
     if not geofabrik_url:
         raise SystemExit(
             f"OSM PBF not found: {pbf_path}\n"
-            f"Add 'geofabrikUrl' to countries.{country_slug} in config/cities.json,\n"
+            f"Add 'geofabrikUrl' to countries.{country_slug} in config/cities/_countries.json,\n"
             "or download it manually from https://download.geofabrik.de"
         )
     print(f"Downloading OSM extract for '{country_slug}'...")
@@ -219,20 +221,16 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open(REPO_ROOT / "config" / "cities.json", encoding="utf-8") as f:
-        registry = json.load(f)
-
-    countries = registry.get("countries", {})
-    cities    = registry.get("cities", [])
-
     if args.city:
-        cities = [c for c in cities if c["slug"] == args.city]
-        if not cities:
+        if args.city not in CITIES:
             sys.exit(f"Unknown city slug: {args.city!r}")
+        cities = [CITIES[args.city]]
+    else:
+        cities = list(CITIES.values())
 
     cities = [c for c in cities if "tileBbox" in c]
     if not cities:
-        sys.exit("No cities with tileBbox found in cities.json")
+        sys.exit("No cities with tileBbox found in config/cities/")
 
     runner = generate_docker if args.docker else None
     if runner is None:
@@ -245,7 +243,7 @@ def main() -> None:
     for city in cities:
         country_slug  = city["country"]
         pbf_path      = CACHE_DIR / f"{country_slug}-latest.osm.pbf"
-        geofabrik_url = countries.get(country_slug, {}).get("geofabrikUrl")
+        geofabrik_url = COUNTRIES.get(country_slug, {}).get("geofabrikUrl")
 
         if country_slug not in seen_countries:
             ensure_osm_pbf(pbf_path, geofabrik_url, country_slug)

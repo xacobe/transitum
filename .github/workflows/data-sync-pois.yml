@@ -35,7 +35,7 @@ jobs:
 
       - name: Regenerate POIs for all cities
         run: |
-          CITIES=$(python3 -c "import json; print(' '.join(c['slug'] for c in json.load(open('config/cities.json'))['cities']))")
+          CITIES=$(python3 -c "import glob,json,os; print(' '.join(json.load(open(p))['slug'] for p in glob.glob('config/cities/*.json') if os.path.basename(p) != '_countries.json'))")
           for city in $CITIES; do
             echo "── POIs $city ──"
             python3 pipeline/osm_to_pois.py --city "$city"

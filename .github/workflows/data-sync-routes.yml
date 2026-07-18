@@ -49,7 +49,7 @@ jobs:
       - name: Resolve cities to regenerate
         id: cities
         run: |
-          ALL_CITIES=$(python3 -c "import json; print(' '.join(c['slug'] for c in json.load(open('config/cities.json'))['cities']))")
+          ALL_CITIES=$(python3 -c "import glob,json,os; print(' '.join(json.load(open(p))['slug'] for p in glob.glob('config/cities/*.json') if os.path.basename(p) != '_countries.json'))")
           FORCED="${{ inputs.force_cities }}"
           if [ "$FORCED" = "all" ]; then
             CITIES="$ALL_CITIES"

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Adds a new city to config/cities.json.
+"""Adds a new city to config/cities/<slug>.json.
 
 Queries Nominatim (OpenStreetMap's geocoder) to fill in geographic data
-automatically, then appends the new entry directly to config/cities.json
-and adds the slug to VITE_CITIES in config/.env.
+automatically, then writes the new entry as its own file directly under
+config/cities/ and adds the slug to VITE_CITIES in config/.env.
 
-Exits with an error if the slug already exists — edit cities.json directly
-to update an existing city.
+Exits with an error if the slug already exists — edit config/cities/<slug>.json
+directly to update an existing city.
 
 Usage:
     make add-city ARGS="--city Dakar --country Senegal --timezone Africa/Dakar --agency-name DDD"
@@ -25,9 +25,9 @@ from pathlib import Path
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 USER_AGENT    = "transitum-add-city/1.0"
 
-ROOT         = Path(__file__).resolve().parent.parent
-CITIES_JSON  = ROOT / "config" / "cities.json"
-ENV_FILE     = ROOT / "config" / ".env"
+ROOT       = Path(__file__).resolve().parent.parent
+CITIES_DIR = ROOT / "config" / "cities"
+ENV_FILE   = ROOT / "config" / ".env"
 
 
 def nominatim_search(city: str, country: str) -> dict:
@@ -84,13 +84,11 @@ def main() -> None:
 
     slug = args.slug or slugify(args.city)
 
-    with open(CITIES_JSON, encoding="utf-8") as f:
-        registry = json.load(f)
-    existing_slugs = {c["slug"] for c in registry.get("cities", [])}
-    if slug in existing_slugs:
+    city_path = CITIES_DIR / f"{slug}.json"
+    if city_path.exists():
         raise SystemExit(
-            f"City '{slug}' already exists in cities.json.\n"
-            "Edit the file directly to update an existing city."
+            f"City '{slug}' already exists at {city_path.relative_to(ROOT)}.\n"
+            "Edit that file directly to update an existing city."
         )
 
     print(f"Querying Nominatim for '{args.city}', '{args.country}'...", file=sys.stderr)
@@ -149,11 +147,11 @@ def main() -> None:
         },
     }
 
-    registry.setdefault("cities", []).append(new_city)
-    with open(CITIES_JSON, "w", encoding="utf-8") as f:
-        json.dump(registry, f, indent=2, ensure_ascii=False)
+    CITIES_DIR.mkdir(parents=True, exist_ok=True)
+    with open(city_path, "w", encoding="utf-8") as f:
+        json.dump(new_city, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print(f"✓ Added '{slug}' to config/cities.json", file=sys.stderr)
+    print(f"✓ Wrote {city_path.relative_to(ROOT)}", file=sys.stderr)
 
     if ENV_FILE.exists():
         env_lines = ENV_FILE.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -172,17 +170,17 @@ def main() -> None:
 
     print("", file=sys.stderr)
     print("Next steps:", file=sys.stderr)
-    print(f"  1. Review the new entry at the end of config/cities.json", file=sys.stderr)
-    print(f"  2. Set \"country\" to the key in \"countries\" (add it if new)", file=sys.stderr)
+    print(f"  1. Review {city_path.relative_to(ROOT)}", file=sys.stderr)
+    print(f"  2. Set \"country\" to a key in config/cities/_countries.json (add it if new)", file=sys.stderr)
     if args.geofabrik_url:
-        print(f"     Also add to countries.<slug>: \"geofabrikUrl\": \"{args.geofabrik_url}\"", file=sys.stderr)
+        print(f"     Also add to _countries.json's countries.<slug>: \"geofabrikUrl\": \"{args.geofabrik_url}\"", file=sys.stderr)
         print(f"     (make tiles will auto-download the PBF on first run)", file=sys.stderr)
     else:
-        print(f"     If new country, add geofabrikUrl to countries.<slug> so make tiles", file=sys.stderr)
+        print(f"     If new country, add geofabrikUrl to _countries.json's countries.<slug> so make tiles", file=sys.stderr)
         print(f"     can auto-download the PBF — see https://download.geofabrik.de", file=sys.stderr)
     print(f"  3. Adjust serviceStart/serviceEnd and frequencyPeriods to match local transit", file=sys.stderr)
     print(f"  4. Run: make data CITY={slug}", file=sys.stderr)
-    print(f"  5. Run: make tiles CITY={slug}  (then update offlineMb in cities.json)", file=sys.stderr)
+    print(f"  5. Run: make tiles CITY={slug}  (then update offlineMb in {city_path.name})", file=sys.stderr)
 
 
 if __name__ == "__main__":

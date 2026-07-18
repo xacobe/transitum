@@ -1,0 +1,78 @@
+{
+  "slug": "bobo-dioulasso",
+  "country": "burkina-faso",
+  "displayName": "Bobo-Dioulasso",
+  "feedId": "bobo-dioulasso",
+  "center": {
+    "lat": 11.177,
+    "lon": -4.298
+  },
+  "searchBbox": {
+    "minLon": -5.0,
+    "minLat": 10.7,
+    "maxLon": -3.7,
+    "maxLat": 11.7
+  },
+  "tileBbox": {
+    "minLon": -4.49,
+    "minLat": 10.93,
+    "maxLon": -4.14,
+    "maxLat": 11.31
+  },
+  "tileMinzoom": 8,
+  "nearbyRadiusMeters": 1500,
+  "offlineMb": 4,
+  "defaultAgencyId": "UNKNOWN",
+  "agencies": [
+    {
+      "agencyId": "SOTRACO",
+      "agencyName": "SOTRACO",
+      "agencyUrl": "https://sotraco.bf",
+      "agencyTimezone": "Africa/Ouagadougou",
+      "agencyLang": "fr"
+    }
+  ],
+  "operatorAliases": {
+    "sotraco": "SOTRACO"
+  },
+  "schedule": {
+    "averageSpeedKmh": 18.0,
+    "dwellSeconds": 20,
+    "serviceStart": "05:30:00",
+    "serviceEnd": "21:30:00",
+    "frequencyPeriods": [
+      {
+        "start": "05:30:00",
+        "end": "06:00:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      },
+      {
+        "start": "06:00:00",
+        "end": "18:00:00",
+        "headwaySeconds": 1200,
+        "reliability": "high"
+      },
+      {
+        "start": "18:00:00",
+        "end": "19:30:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      },
+      {
+        "start": "19:30:00",
+        "end": "21:30:00",
+        "headwaySeconds": 2700,
+        "reliability": "low"
+      }
+    ]
+  },
+  "osmPatches": {
+    "areaName": "Bobo-Dioulasso",
+    "duplicateRelationIds": [
+      12896471,
+      12896472
+    ],
+    "refAliases": {}
+  }
+}

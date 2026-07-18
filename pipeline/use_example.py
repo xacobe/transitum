@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Adds a working example country (one or more cities) to config/cities.json and data/.
+"""Adds a working example country (one or more cities) to config/cities/ and data/.
 
-The framework ships with config/cities.json empty - this is the "easy way to
-try one" it points to. Merges the city entries (and the country entry they
-need) from examples/<country>/cities.example.json into config/cities.json,
-copies that example's pre-generated gtfs/ and cities/ data into data/, and
-generates the Minotor routing binaries (timetable.bin + stops.bin) from that
-GTFS - so the app, including offline/online route planning, runs immediately
-after `make dev`. No network calls needed (no OSM, no live GTFS feed).
+The framework ships with config/cities/ empty - this is the "easy way to try
+one" it points to. Copies the city files (and the country entries they need)
+from examples/<country>/cities/ into config/cities/, copies that example's
+pre-generated gtfs/ and cities/ data into data/, and generates the Minotor
+routing binaries (timetable.bin + stops.bin) from that GTFS - so the app,
+including offline/online route planning, runs immediately after `make dev`.
+No network calls needed (no OSM, no live GTFS feed).
 
 Map tiles are the one thing NOT generated here - `make tiles CITY=<slug>`
 needs Java or Docker plus a country-level OSM PBF (100MB-1GB+ depending on
@@ -15,8 +15,9 @@ country, downloaded once and cached), too heavy for a "try it in 30 seconds"
 path. Without it the map falls back to no basemap; run `make tiles` after if
 you want the visual map, not just stops/routes/search.
 
-Refuses to add a city whose slug is already in config/cities.json - re-running
-this (or `make add-city`) for the same example is a no-op error, not a merge.
+Refuses to add a city whose config/cities/<slug>.json already exists -
+re-running this (or `make add-city`) for the same example is a no-op error,
+not a merge.
 
 Usage:
     make use-example COUNTRY=spain
@@ -33,7 +34,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CITIES_JSON = ROOT / "config" / "cities.json"
+CITIES_DIR = ROOT / "config" / "cities"
 EXAMPLES_DIR = ROOT / "examples"
 DATA_DIR = ROOT / "data"
 CACHE_DIR = DATA_DIR / ".cache"
@@ -52,15 +53,18 @@ def main() -> None:
     args = parser.parse_args()
 
     example_dir = EXAMPLES_DIR / args.country
-    example_json = example_dir / "cities.example.json"
-    if not example_json.exists():
+    example_cities_dir = example_dir / "cities"
+    if not example_cities_dir.exists():
         available = ", ".join(sorted(p.name for p in EXAMPLES_DIR.iterdir() if p.is_dir()))
-        raise SystemExit(f"No example '{args.country}' (looked for {example_json}).\nAvailable: {available}")
+        raise SystemExit(f"No example '{args.country}' (looked for {example_cities_dir}).\nAvailable: {available}")
 
-    example_data = json.loads(example_json.read_text(encoding="utf-8"))
-    city_entries = example_data.get("cities", [])
+    city_entries = [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted(example_cities_dir.glob("*.json"))
+        if p.name != "_countries.json"
+    ]
     if not city_entries:
-        raise SystemExit(f"{example_json} has no cities - nothing to add.")
+        raise SystemExit(f"{example_cities_dir} has no cities - nothing to add.")
 
     if args.city:
         wanted = set(args.city.split(","))
@@ -73,37 +77,45 @@ def main() -> None:
             )
         city_entries = [c for c in city_entries if c["slug"] in wanted]
 
-    if not CITIES_JSON.exists():
-        raise SystemExit(f"{CITIES_JSON} not found - is config/cities.json missing entirely?")
-    target_data = json.loads(CITIES_JSON.read_text(encoding="utf-8"))
-
-    existing_slugs = {c["slug"] for c in target_data.get("cities", [])}
-    already = [c["slug"] for c in city_entries if c["slug"] in existing_slugs]
+    CITIES_DIR.mkdir(parents=True, exist_ok=True)
+    already = [c["slug"] for c in city_entries if (CITIES_DIR / f"{c['slug']}.json").exists()]
     if already:
         raise SystemExit(
-            f"config/cities.json already has: {', '.join(sorted(already))}.\n"
-            "Edit the file directly (or remove the entry) if you want to redo this."
+            f"config/cities/ already has: {', '.join(sorted(already))}.\n"
+            "Edit those files directly (or remove them) if you want to redo this."
         )
 
-    target_countries = target_data.setdefault("countries", {})
+    countries_path = CITIES_DIR / "_countries.json"
+    target_registry = (
+        json.loads(countries_path.read_text(encoding="utf-8")) if countries_path.exists() else {}
+    )
+    target_countries = target_registry.setdefault("countries", {})
+
+    example_countries_path = example_cities_dir / "_countries.json"
+    example_registry = (
+        json.loads(example_countries_path.read_text(encoding="utf-8"))
+        if example_countries_path.exists() else {}
+    )
     needed_countries = {c["country"] for c in city_entries} - set(target_countries)
-    missing_country_entries = needed_countries - set(example_data.get("countries", {}))
+    missing_country_entries = needed_countries - set(example_registry.get("countries", {}))
     if missing_country_entries:
         raise SystemExit(
-            f"{example_json} references countr{'y' if len(missing_country_entries) == 1 else 'ies'} "
+            f"{example_countries_path} references countr{'y' if len(missing_country_entries) == 1 else 'ies'} "
             f"{', '.join(sorted(missing_country_entries))} but has no matching entry under \"countries\"."
         )
     for country in needed_countries:
-        target_countries[country] = example_data["countries"][country]
-
-    target_data.setdefault("cities", []).extend(city_entries)
+        target_countries[country] = example_registry["countries"][country]
 
     added_slugs = {c["slug"] for c in city_entries}
-    if "defaultCity" not in target_data and example_data.get("defaultCity") in added_slugs:
-        target_data["defaultCity"] = example_data["defaultCity"]
+    if "defaultCity" not in target_registry and example_registry.get("defaultCity") in added_slugs:
+        target_registry["defaultCity"] = example_registry["defaultCity"]
 
-    CITIES_JSON.write_text(json.dumps(target_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"✓ Added {', '.join(sorted(added_slugs))} to config/cities.json", file=sys.stderr)
+    countries_path.write_text(json.dumps(target_registry, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    for city in city_entries:
+        city_path = CITIES_DIR / f"{city['slug']}.json"
+        city_path.write_text(json.dumps(city, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"✓ Added {', '.join(sorted(added_slugs))} to config/cities/", file=sys.stderr)
 
     zipped_slugs = []
     for city in city_entries:

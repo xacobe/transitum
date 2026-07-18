@@ -1,22 +1,24 @@
 import { createServer } from 'http'
-import { readFileSync } from 'fs'
+import { readdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { loadCityData, planRoute, getStopDepartures } from './routing.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = process.env.DATA_DIR ?? join(__dirname, '../../data/cities')
-const CITIES_JSON = process.env.CITIES_JSON ?? join(__dirname, '../../config/cities.json')
+const CITIES_DIR = process.env.CITIES_DIR ?? join(__dirname, '../../config/cities')
 const PORT = Number(process.env.PORT ?? 3001)
 
-// config/cities.json is the single source of truth for which cities exist
-// (same convention as pipeline/cities.py and frontend/src/cities.ts) - CITIES
-// only needs setting to serve a *subset* (e.g. running separate routing-serve
-// instances per region in a larger deployment), not just to run at all.
-const registry = JSON.parse(readFileSync(CITIES_JSON, 'utf-8'))
+// config/cities/*.json (one file per city, _countries.json excluded) is the
+// single source of truth for which cities exist (same convention as
+// pipeline/cities.py and frontend/src/cities.ts) - CITIES only needs setting
+// to serve a *subset* (e.g. running separate routing-serve instances per
+// region in a larger deployment), not just to run at all.
 const CITY_SLUGS = process.env.CITIES
   ? process.env.CITIES.split(',')
-  : (registry.cities ?? []).map((c) => c.slug)
+  : readdirSync(CITIES_DIR)
+      .filter((f) => f.endsWith('.json') && f !== '_countries.json')
+      .map((f) => f.slice(0, -'.json'.length))
 
 console.log(`Loading city data from ${DATA_DIR}...`)
 const cities = new Map()

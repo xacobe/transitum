@@ -3,13 +3,13 @@ services:
     build: ./services/routing
     volumes:
       - ./data/cities:/app/data:ro
-      - ./config/cities.json:/config/cities.json:ro
+      - ./config/cities:/config/cities:ro
     environment:
       DATA_DIR: /app/data
-      CITIES_JSON: /config/cities.json
+      CITIES_DIR: /config/cities
       PORT: "3001"
-      # Unset by default: serves every city in cities.json. Only set this to
-      # scope one routing-serve instance to a subset (e.g. per-region
+      # Unset by default: serves every city in config/cities/. Only set this
+      # to scope one routing-serve instance to a subset (e.g. per-region
       # instances in a larger deployment) - see services/routing/index.js.
       # CITIES: "slug-a,slug-b"
     restart: unless-stopped

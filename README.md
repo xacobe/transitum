@@ -2,7 +2,7 @@
 
 Progressive web app framework for public transit. Answers two questions: **"which bus stops near me?"** and **"how do I get from A to B?"**
 
-Ships with no city pre-configured — `config/cities.json` is empty by default. Two working examples live under `examples/`: `spain/` (Vigo, official-GTFS pattern) and `burkina-faso/` (Ouagadougou/Koudougou/Bobo-Dioulasso, OSM-synthetic pattern) — both drop in with one command, see [Trying it out](#trying-it-out).
+Ships with no city pre-configured — `config/cities/` is empty by default. Two working examples live under `examples/`: `spain/` (Vigo, official-GTFS pattern) and `burkina-faso/` (Ouagadougou/Koudougou/Bobo-Dioulasso, OSM-synthetic pattern) — both drop in with one command, see [Trying it out](#trying-it-out).
 
 Designed for the constraints of low-connectivity deployments: 2G/3G connections, expensive data, and no published real-time timetables from most operators. Configuration for a new region is possible through a single `.env` file and a city registry, no code changes.
 
@@ -45,8 +45,10 @@ Designed for the constraints of low-connectivity deployments: 2G/3G connections,
 ```
 config/
 ├── .env.example          ← copy to .env and fill in — single deployment config entry point
-├── cities.json           ← city registry: coordinates, agency config, schedule constants (empty by default)
-└── cities.example.jsonc  ← reference copy: both supported city patterns, fully commented (not parsed)
+└── cities/               ← city registry: one <slug>.json per city (coordinates, agency config,
+                             schedule constants) + _countries.json (shared country registry,
+                             default city) — empty by default. *.example.jsonc are reference
+                             copies (both supported city patterns, fully commented, not parsed)
 
 examples/
 ├── spain/                ← official-GTFS pattern, one city (Vigo) — `make use-example COUNTRY=spain`
@@ -66,8 +68,8 @@ data/
 └── .cache/               ← downloaded OSM PBFs + generated GTFS zips (gitignored)
 
 pipeline/                 ← data generation scripts (Python + Node), npm workspace member
-├── use_example.py            merges an examples/<name>/ fixture into config/cities.json + data/
-├── add_city.py                queries Nominatim, appends a starter entry to config/cities.json
+├── use_example.py            copies an examples/<name>/ fixture into config/cities/ + data/
+├── add_city.py                queries Nominatim, writes a starter config/cities/<slug>.json
 ├── osm_to_gtfs.py            OSM relations → synthetic GTFS
 ├── import_gtfs.py            downloads + remaps an official GTFS feed (alternative to osm_to_gtfs.py)
 ├── osm_to_pois.py            OSM → pois.json
@@ -120,7 +122,7 @@ package.json               ← npm workspaces root (frontend/ + pipeline/ share 
 ```bash
 cp config/.env.example config/.env   # fill in secrets (see .env.example for all vars)
 make install                          # npm ci at the repo root (npm workspaces: frontend + pipeline)
-make use-example COUNTRY=spain        # config/cities.json ships empty — this drops in a working city
+make use-example COUNTRY=spain        # config/cities/ ships empty — this drops in a working city
 make dev                              # frontend dev server → http://localhost:5173
 ```
 
@@ -132,7 +134,7 @@ docker compose --env-file config/.env up routing-serve
 
 ### Trying it out
 
-`config/cities.json` is empty by default — no city, no bundled transit data. The fastest way to see the app working:
+`config/cities/` is empty by default — no city, no bundled transit data. The fastest way to see the app working:
 
 ```bash
 make use-example COUNTRY=spain             # one city, real official GTFS schedules
@@ -140,7 +142,7 @@ make use-example COUNTRY=burkina-faso      # three cities, OSM-reconstructed sch
 make use-example COUNTRY=burkina-faso CITY=ouagadougou   # just one city from a multi-city example
 ```
 
-Each copies a ready-to-use city entry into `config/cities.json` plus its pre-generated GTFS/JSON data into `data/` — no OSM or live-GTFS fetch needed. See `examples/<country>/README.md` for what each one demonstrates. To add a real city instead, see [Adding a new city](#adding-a-new-city).
+Each copies a ready-to-use `<slug>.json` into `config/cities/` plus its pre-generated GTFS/JSON data into `data/` — no OSM or live-GTFS fetch needed. See `examples/<country>/README.md` for what each one demonstrates. To add a real city instead, see [Adding a new city](#adding-a-new-city).
 
 ---
 
@@ -178,7 +180,7 @@ needed into a deployment-owned file instead (`config/theme.css`,
 
 | | Owned by your deployment | Owned by the framework |
 |---|---|---|
-| **City data** | `config/cities.json`, `data/` | `config/*.example.*`, `examples/` |
+| **City data** | `config/cities/*.json` (`_countries.json` too), `data/` | `config/cities/*.example.jsonc`, `config/*.example.*`, `examples/` |
 | **Secrets/config** | `config/.env*` (except `.env.example`) | `config/.env.example` |
 | **Styling** | `config/theme.css` | `frontend/src/styles/tokens.css`, everything else under `frontend/src/` |
 | **Branding assets** | `frontend/public/logo/`, `frontend/public/icons/` (generated by `make icons` from `VITE_THEME_COLOR`, not committed by the framework) | — |
@@ -198,7 +200,7 @@ touching framework files at all.
 
 ## Data pipeline
 
-All pipeline scripts take `--city <slug>`. Available slugs are defined in `config/cities.json`.
+All pipeline scripts take `--city <slug>`. Available slugs are the filenames under `config/cities/` (minus `.json`).
 
 Regenerate all data for one city — two variants depending on where the city's transit data comes from (see [Adding a new city](#adding-a-new-city)):
 
@@ -338,20 +340,20 @@ The framework is designed so that adding a city only requires data work — no c
 
 ### 0. Check for an official GTFS feed first
 
-Transit data (stops/routes/timetable — not POIs, which always come from OSM) can come from either of two sources; see `config/cities.example.jsonc` for a fully-commented example of both:
+Transit data (stops/routes/timetable — not POIs, which always come from OSM) can come from either of two sources; see `config/cities/example-city-a.example.jsonc` (OSM-synthetic) and `config/cities/example-city-b.example.jsonc` (official-gtfs) for fully-commented examples of both:
 
 - **Official GTFS** (preferred when it exists) — the operator or the city/region's open-data portal publishes a real feed with actual schedules. Far more complete than anything reconstructed from OSM tags: real timetables instead of an estimated frequency, and full line coverage instead of whatever happens to be tagged in OSM. Look for one at the city/region's open-data portal, a national access point (EU operators are required to publish to one), or a feed catalog like [mobilitydatabase.org](https://mobilitydatabase.org) or [transit.land](https://transit.land). If you find one, skip to **step 4b** below.
 - **OSM-synthetic** (fallback) — no agency publishes a feed, so the topology is reconstructed from OSM route relation tagging (`route=bus` relations) and schedules are a hand-configured frequency estimate. Coverage is only as good as OSM's tagging for that city/network — can be significantly incomplete for cities with light OSM transit mapping.
 
 ### 1. Generate the city block
 
-`make add-city` queries Nominatim for the city's coordinates and bounding box, appends a starter entry to `config/cities.json`, and adds the slug to `VITE_CITIES` in `config/.env`:
+`make add-city` queries Nominatim for the city's coordinates and bounding box, writes a starter `config/cities/<slug>.json`, and adds the slug to `VITE_CITIES` in `config/.env`:
 
 ```bash
 make add-city ARGS="--city Dakar --country Senegal --timezone Africa/Dakar --agency-name DDD"
 ```
 
-If the slug already exists in `cities.json` the script exits with an error — edit the file directly to update an existing city.
+If `config/cities/<slug>.json` already exists the script exits with an error — edit that file directly to update an existing city.
 
 All available flags:
 
@@ -367,11 +369,11 @@ All available flags:
 | `--service-start` | no | `06:00:00` |
 | `--service-end` | no | `20:00:00` |
 
-### 2. Review and adjust `config/cities.json`
+### 2. Review and adjust `config/cities/<slug>.json`
 
-Open `config/cities.json` and find the new entry at the end of `"cities"`. Fields to review:
+Open the new file. Fields to review:
 
-- **`country`** — set to a key in the `"countries"` object at the top of the file. Add a new entry there if needed.
+- **`country`** — set to a key in `config/cities/_countries.json`'s `"countries"` object. Add a new entry there if needed.
 - **`serviceStart` / `serviceEnd`** and **`frequencyPeriods`** — adjust to match actual local transit hours and headways. The generated values are generic defaults.
 - **`agencies`** — update `agencyUrl` if known.
 
@@ -379,9 +381,9 @@ Fields marked `(post-pipeline)` in the schema reference should be left at their 
 
 ### 3. Set the Geofabrik URL for the country (if new)
 
-`make tiles` needs a country-level `.osm.pbf` file to generate vector tiles. If the country already exists in `config/cities.json` with a `geofabrikUrl`, this step is done — the file is downloaded automatically on first run.
+`make tiles` needs a country-level `.osm.pbf` file to generate vector tiles. If the country already exists in `config/cities/_countries.json` with a `geofabrikUrl`, this step is done — the file is downloaded automatically on first run.
 
-For a new country, add `geofabrikUrl` to its entry under `"countries"` in `cities.json`:
+For a new country, add `geofabrikUrl` to its entry under `"countries"` in `config/cities/_countries.json`:
 
 ```json
 "senegal": {
@@ -403,7 +405,7 @@ make data CITY=your-city
 
 This generates all data files in `data/cities/your-city/` — stops, routes, POIs, and routing binaries. The first run queries Overpass API; expect a few minutes for a large city.
 
-After the pipeline runs, check its output for warnings about duplicate relation IDs or unrecognized `ref=` tags. If any appear, fill in `duplicateRelationIds` and `refAliases` under `osmPatches` in the city's `cities.json` entry, then re-run. If the area also happens to catch relations that are geographically in-scope but not actually part of this city's network — a same-named place elsewhere in the world (Overpass area name matching isn't unique — e.g. "Vigo" matched both the Galician city and a village in Kent, England), or a legitimate but out-of-scope intercity/regional coach line that just happens to pass through — list their relation IDs under `excludeRelationIds` in the same object and re-run.
+After the pipeline runs, check its output for warnings about duplicate relation IDs or unrecognized `ref=` tags. If any appear, fill in `duplicateRelationIds` and `refAliases` under `osmPatches` in the city's `config/cities/<slug>.json`, then re-run. If the area also happens to catch relations that are geographically in-scope but not actually part of this city's network — a same-named place elsewhere in the world (Overpass area name matching isn't unique — e.g. "Vigo" matched both the Galician city and a village in Kent, England), or a legitimate but out-of-scope intercity/regional coach line that just happens to pass through — list their relation IDs under `excludeRelationIds` in the same object and re-run.
 
 ### 4b. Run the data pipeline (official GTFS)
 
@@ -411,7 +413,7 @@ After the pipeline runs, check its output for warnings about duplicate relation 
 make import-gtfs CITY=your-city URL=https://example.org/opendata/gtfs.zip
 ```
 
-Downloads the feed, remaps its `agency_id`(s) to the ones declared under `agencies` (matched by order — the common case is one agency on each side; the script exits with an error asking you to map them by hand if the counts don't match), and runs the same routes/stops/POIs/binaries steps as 4a. Add a `transitSource` object to the city's entry recording `"type": "official-gtfs"` and the feed `url`, so it's clear later where the data came from and where to re-fetch it — see `config/cities.example.jsonc`.
+Downloads the feed, remaps its `agency_id`(s) to the ones declared under `agencies` (matched by order — the common case is one agency on each side; the script exits with an error asking you to map them by hand if the counts don't match), and runs the same routes/stops/POIs/binaries steps as 4a. Add a `transitSource` object to the city's `config/cities/<slug>.json` recording `"type": "official-gtfs"` and the feed `url`, so it's clear later where the data came from and where to re-fetch it — see `config/cities/example-city-b.example.jsonc`.
 
 Some feeds only cover a short rolling calendar window (check `calendar_dates.txt`'s date range after importing) — if so, plan to re-run `make import-gtfs` periodically to keep it current; there's no automated resync workflow for this path yet (unlike `data-sync-routes.yml` for the OSM path).
 
@@ -423,7 +425,7 @@ Requires Java 17+. The first run downloads Planetiler (~150 MB, one-time):
 make tiles CITY=your-city
 ```
 
-Output: `data/cities/your-city/tiles.pmtiles` (~20–80 MB depending on city size). Once generated, update `offlineMb` in `cities.json` to match the file size in megabytes.
+Output: `data/cities/your-city/tiles.pmtiles` (~20–80 MB depending on city size). Once generated, update `offlineMb` in `config/cities/your-city.json` to match the file size in megabytes.
 
 ### 6. Build and deploy
 

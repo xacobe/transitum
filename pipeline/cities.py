@@ -5,43 +5,51 @@ Each city contributes only data (OSM area, synthetic schedule constants,
 manual OSM relation curation, etc) - the logic of the scripts
 (osm_to_gtfs.py, osm_to_pois.py, etc) is the same for all of them.
 
-The real source of the data is config/cities.json — a single source of
-truth shared with the frontend (frontend/src/cities.ts imports it directly,
-Vite/TypeScript both support importing .json natively). This module just
-loads that file and adds the path utilities the scripts need.
+The real source of the data is config/cities/ — a single source of truth
+shared with the frontend (frontend/src/cities.ts glob-imports the same
+directory). One city per config/cities/<slug>.json file, plus a single
+config/cities/_countries.json for the shared country registry and the
+default-city slug (not a per-city concern, so it doesn't belong in any
+one city's file). This module just loads that directory and adds the
+path utilities the scripts need.
 """
 import argparse
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+CITIES_DIR = ROOT / "config" / "cities"
+_COUNTRIES_FILE = CITIES_DIR / "_countries.json"
 
-with open(ROOT / "config" / "cities.json", encoding="utf-8") as f:
-    _REGISTRY = json.load(f)
+# The framework ships with an empty config/cities/ (no city pre-configured,
+# not even _countries.json) - .get() with defaults makes that the normal
+# "fresh install, nothing added yet" state instead of a KeyError/
+# FileNotFoundError. get_city() below is where that state actually needs
+# to fail, with an actionable message.
+_countries_meta = (
+    json.loads(_COUNTRIES_FILE.read_text(encoding="utf-8")) if _COUNTRIES_FILE.exists() else {}
+)
+COUNTRIES = _countries_meta.get("countries", {})
+DEFAULT_CITY_SLUG = _countries_meta.get("defaultCity")
 
-# The framework ships with an empty cities.json (no city pre-configured) -
-# .get() with defaults makes that the normal "fresh install, nothing added
-# yet" state instead of a KeyError. get_city() below is where that state
-# actually needs to fail, with an actionable message.
-COUNTRIES = _REGISTRY.get("countries", {})
-DEFAULT_CITY_SLUG = _REGISTRY.get("defaultCity")
-
-# Slugs are the only uniqueness key used throughout (this dict, gtfs_dir(),
-# city_data_dir(), the frontend's getCity()) - never validated against the
-# whole registry at once, only checked one-at-a-time by add_city.py/
-# use_example.py when adding a NEW city. A hand-edited cities.json (or two
-# examples merged that happen to share a slug) could still sneak a dupe in,
-# which would otherwise silently drop one entry here with no error.
-_slugs = [c["slug"] for c in _REGISTRY.get("cities", [])]
-_dupes = sorted({s for s in _slugs if _slugs.count(s) > 1})
-if _dupes:
-    raise SystemExit(
-        f"config/cities.json has duplicate city slug(s): {', '.join(_dupes)}.\n"
-        "Slugs must be unique across the whole registry, even across different countries "
-        "- rename one of them."
-    )
-
-CITIES = {c["slug"]: c for c in _REGISTRY.get("cities", [])}
+# One file per city means a filename collision (the actual uniqueness
+# mechanism) is already impossible - the only way to still get a dupe is a
+# city's own "slug" field disagreeing with its filename (copy-pasted file,
+# forgot to update the field) or, less likely, two files whose "slug"
+# fields collide despite different filenames. Both are checked below.
+CITIES: dict[str, dict] = {}
+for _path in sorted(CITIES_DIR.glob("*.json")):
+    if _path.name == "_countries.json":
+        continue
+    _city = json.loads(_path.read_text(encoding="utf-8"))
+    if _city["slug"] != _path.stem:
+        raise SystemExit(
+            f'config/cities/{_path.name} has "slug": "{_city["slug"]}", '
+            f'which must match its filename ("{_path.stem}") - rename the file or fix the field.'
+        )
+    if _city["slug"] in CITIES:
+        raise SystemExit(f'Duplicate city slug "{_city["slug"]}" in config/cities/.')
+    CITIES[_city["slug"]] = _city
 
 
 def get_city(slug: str) -> dict:
@@ -50,7 +58,7 @@ def get_city(slug: str) -> dict:
     except KeyError:
         if not CITIES:
             raise SystemExit(
-                "config/cities.json has no cities configured yet.\n"
+                "config/cities/ has no cities configured yet.\n"
                 "Try a working example: make use-example COUNTRY=spain (or COUNTRY=burkina-faso)\n"
                 'Or add your own: make add-city ARGS="--city ... --country ... --timezone ... --agency-name ..."'
             )

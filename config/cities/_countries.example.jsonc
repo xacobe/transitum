@@ -1,0 +1,25 @@
+// Reference/documentation copy of the country-registry schema — NOT loaded
+// by anything (pipeline/cities.py and frontend/src/cities.ts both read your
+// project's real, live config/cities/_countries.json). This file uses //
+// comments and is not strict JSON — copy the fields you need into your own
+// config/cities/_countries.json by hand instead.
+//
+// One country entry per city's "country" field (see example-city-a.example.jsonc
+// and example-city-b.example.jsonc) - a city's own file references this by
+// key, so a country used by several cities is still declared once here.
+// "defaultCity" (a city slug, i.e. a config/cities/<slug>.json filename
+// without the extension) lives here too since it isn't a per-city concern.
+
+{
+  "countries": {
+    "example-country": {
+      "displayName": "Example Country",
+      "countryCode": "XX",
+      // Country-level .osm.pbf for `make tiles` (auto-downloaded on first
+      // run). Find yours at https://download.geofabrik.de
+      "geofabrikUrl": "https://download.geofabrik.de/region/example-country-latest.osm.pbf"
+    }
+  },
+
+  "defaultCity": "example-city-a"
+}

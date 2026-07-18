@@ -1,0 +1,119 @@
+// Reference/documentation copy of the city registry schema — NOT loaded by
+// anything (pipeline/cities.py and frontend/src/cities.ts both glob-load
+// your project's real, live config/cities/*.json files). This file uses //
+// comments and is not strict JSON — don't feed it to JSON.parse/json.load,
+// copy the fields you need into your own config/cities/<slug>.json by hand
+// instead (the filename IS the slug: example-city-a.json, not this file's
+// name). See _countries.example.jsonc for the country registry this city's
+// "country" field references.
+//
+// The two patterns differ only in where the TRANSIT data (stops/routes/
+// timetable) comes from - POIs always come from OSM either way
+// (pipeline/osm_to_pois.py doesn't care which pattern the city uses). This
+// file is pattern A; see example-city-b.example.jsonc for pattern B.
+//
+//  A) "osm-synthetic" — no agency publishes a GTFS feed. Transit topology is
+//     reconstructed from OSM route relation tagging (pipeline/osm_to_gtfs.py)
+//     and schedules are a frequency-based estimate you configure by hand
+//     (schedule.frequencyPeriods below). This is the only option when the
+//     operator has no open-data presence — accept that line coverage is only
+//     as complete as OSM's tagging for that city.
+//
+//  B) "official-gtfs" — the operator (or the city/region's open-data portal)
+//     publishes a real GTFS feed with actual timetables. Prefer this whenever
+//     it exists: it's dramatically more complete (real stop_times, full line
+//     coverage, real schedules) than what can be reconstructed from OSM tags
+//     alone. Import it with pipeline/import_gtfs.py instead of
+//     osm_to_gtfs.py — everything downstream (gtfs_routes_to_json.py,
+//     gtfs_stops_to_json.py, generate-transit-data) is source-agnostic and
+//     needs no changes either way. Where to look for a feed: the city or
+//     region's open-data portal (e.g. "datos.<city>.es", a national access
+//     point such as NAP mandated by EU rules, or https://mobilitydatabase.org
+//     / https://transit.land as feed catalogs).
+//
+// schedule.frequencyPeriods stays meaningful for BOTH patterns even though it
+// looks like an "osm-synthetic" concept: it defines the time-of-day bands
+// used to bucket the REAL computed per-line headway
+// (pipeline/gtfs_routes_to_json.py::compute_frequency_periods reads the
+// actual timetable — frequencies.txt if present, else the median gap between
+// real departures — and only falls back to headwaySeconds here when a
+// line/band has too little data to compute its own).
+
+{
+  "slug": "example-city-a",
+  "country": "example-country",
+  "displayName": "Example City A",
+  "feedId": "example-city-a", // usually same as slug
+
+  // Geographic center — GPS auto-detection on first launch. From Google
+  // Maps or `make add-city` (queries Nominatim).
+  "center": { "lat": 0.0, "lon": 0.0 },
+
+  // Bounding box for destination search results (can be wider than transit area)
+  "searchBbox": { "minLon": 0.0, "minLat": 0.0, "maxLon": 0.0, "maxLat": 0.0 },
+
+  // Bounding box for tile generation — trim to where transit actually runs
+  "tileBbox": { "minLon": 0.0, "minLat": 0.0, "maxLon": 0.0, "maxLat": 0.0 },
+
+  "tileMinzoom": 8, // min zoom level included in the .pmtiles archive
+  "nearbyRadiusMeters": 1500, // radius for "nearby stops" search
+  "offlineMb": 0, // (post-pipeline) fill in after `make tiles`
+
+  "defaultAgencyId": "UNKNOWN", // fallback when an OSM operator= tag can't be matched
+
+  // No "transitSource" key for this pattern — its absence means
+  // "osm-synthetic, run pipeline/osm_to_gtfs.py". Only official-gtfs
+  // cities declare "transitSource" (see example-city-b.example.jsonc).
+
+  "agencies": [
+    {
+      "agencyId": "AGENCY",
+      "agencyName": "Agency Name",
+      "agencyUrl": "https://example.org",
+      "agencyTimezone": "Region/City",
+      "agencyLang": "fr"
+    }
+  ],
+
+  // Maps raw OSM operator= tag values (lowercase) to a declared agencyId.
+  // Add entries here when the pipeline warns about unrecognized operators.
+  "operatorAliases": {
+    "agency name variant": "AGENCY"
+  },
+
+  "schedule": {
+    "averageSpeedKmh": 18.0, // used by the routing engine for travel time estimates
+    "dwellSeconds": 20, // stop dwell time added per stop
+    "serviceStart": "05:30:00",
+    "serviceEnd": "21:30:00",
+
+    // Bands used both to generate the synthetic schedule (osm_to_gtfs.py
+    // writes one frequencies.txt row per band per trip) and, for ANY city
+    // regardless of pattern, as the fallback when a line/band has too
+    // little real data to compute its own headway. reliability:
+    // "high" | "medium" | "low" - shown as a quality indicator in the UI.
+    "frequencyPeriods": [
+      { "start": "05:30:00", "end": "06:00:00", "headwaySeconds": 1800, "reliability": "medium" },
+      { "start": "06:00:00", "end": "18:00:00", "headwaySeconds": 1200, "reliability": "high" },
+      { "start": "18:00:00", "end": "21:30:00", "headwaySeconds": 1800, "reliability": "medium" }
+    ]
+  },
+
+  "osmPatches": {
+    "areaName": "Example City A", // OSM area name, scopes Overpass queries. Always matched with boundary=administrative (excludes plain place=city/town nodes, which Nominatim gives an unrelated, much wider heuristic search radius)
+    // Optional. OSM's admin_level numbering isn't standardized across
+    // countries - set this when more than one boundary=administrative
+    // area shares the exact same name at different levels (e.g. a
+    // municipality AND a supra-municipal comarca/district both named
+    // "Vigo" - the wider one silently pulled in POIs ~10km outside the
+    // real city, real bug hit in production). Omit if areaName is
+    // already unambiguous for this country/region.
+    "adminLevel": "8",
+    "duplicateRelationIds": [], // (post-pipeline) OSM relation IDs that duplicate a line already included
+    "excludeRelationIds": [], // (post-pipeline) relations in-area but out of scope (e.g. intercity coach lines, a same-named place elsewhere in the world - see Overpass [bbox:...] note in osm_to_gtfs.py)
+    // Maps inconsistent OSM ref= tag values to one canonical route name.
+    "refAliases": {
+      "LINE -Variant": "LINE Variant"
+    }
+  }
+}

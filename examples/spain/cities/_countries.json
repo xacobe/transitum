@@ -1,0 +1,10 @@
+{
+  "countries": {
+    "spain": {
+      "displayName": "Spain",
+      "countryCode": "ES",
+      "geofabrikUrl": "https://download.geofabrik.de/europe/spain-latest.osm.pbf"
+    }
+  },
+  "defaultCity": "vigo"
+}

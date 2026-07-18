@@ -1,0 +1,109 @@
+// Reference/documentation copy of the city registry schema — NOT loaded by
+// anything (pipeline/cities.py and frontend/src/cities.ts both glob-load
+// your project's real, live config/cities/*.json files). This file uses //
+// comments and is not strict JSON — copy the fields you need into your own
+// config/cities/<slug>.json by hand instead (the filename IS the slug:
+// example-city-b.json, not this file's name). See example-city-a.example.jsonc
+// for the schema preamble (both patterns explained) and _countries.example.jsonc
+// for the country registry this city's "country" field references.
+//
+// This file is pattern B: "official-gtfs" — the operator (or the city/
+// region's open-data portal) publishes a real GTFS feed with actual
+// timetables. Prefer this whenever it exists: it's dramatically more
+// complete (real stop_times, full line coverage, real schedules) than what
+// can be reconstructed from OSM tags alone. Import it with
+// pipeline/import_gtfs.py instead of osm_to_gtfs.py — everything downstream
+// (gtfs_routes_to_json.py, gtfs_stops_to_json.py, generate-transit-data) is
+// source-agnostic and needs no changes either way. Where to look for a
+// feed: the city or region's open-data portal (e.g. "datos.<city>.es", a
+// national access point such as NAP mandated by EU rules, or
+// https://mobilitydatabase.org / https://transit.land as feed catalogs).
+
+{
+  "slug": "example-city-b",
+  "country": "example-country",
+  "displayName": "Example City B",
+  "feedId": "example-city-b",
+
+  "center": { "lat": 0.0, "lon": 0.0 },
+  "searchBbox": { "minLon": 0.0, "minLat": 0.0, "maxLon": 0.0, "maxLat": 0.0 },
+  "tileBbox": { "minLon": 0.0, "minLat": 0.0, "maxLon": 0.0, "maxLat": 0.0 },
+
+  "tileMinzoom": 8,
+  "nearbyRadiusMeters": 1500,
+  "offlineMb": 0,
+
+  "defaultAgencyId": "UNKNOWN",
+
+  // Optional, off by default: use each line's own GTFS route_color/
+  // route_text_color (pipeline/gtfs_routes_to_json.py carries them
+  // through whenever the source feed sets them) instead of
+  // useLineColor.ts's hash-based palette. Only official-gtfs feeds ever
+  // set these - osm_to_gtfs.py's synthetic output never does, so this is
+  // meaningless for pattern A. A per-city choice even among
+  // official-gtfs cities: turn it on when you want the operator's own
+  // branding on the map, leave off to keep the app's consistent
+  // generated palette.
+  "useOfficialLineColors": false,
+
+  // Declares this city's transit data as an imported official feed
+  // instead of an OSM reconstruction. Purely informational to
+  // humans/tooling (nothing at runtime branches on "type") except "url",
+  // which is what you (or a future periodic resync job) re-fetch from —
+  // see pipeline/import_gtfs.py. Whether lines actually have a fixed
+  // schedule vs. a published frequency is a separate, per-line fact
+  // (see RouteDirection.hasFixedSchedule) - an official-gtfs feed can
+  // freely mix both, so it isn't inferred from "type" here.
+  "transitSource": {
+    "type": "official-gtfs",
+    "url": "https://example.org/opendata/gtfs.zip"
+  },
+
+  "agencies": [
+    {
+      "agencyId": "AGENCY",
+      "agencyName": "Agency Name",
+      "agencyUrl": "https://example.org",
+      "agencyTimezone": "Region/City",
+      "agencyLang": "en"
+      // import_gtfs.py remaps the feed's own agency_id(s) to these
+      // declared ones, matched by order — the common case is one urban
+      // operator, i.e. one agency on each side. If the feed has more
+      // than one, it exits with an error asking you to map
+      // agency.txt/routes.txt's agency_id columns by hand.
+    }
+  ],
+
+  // Not used for official-gtfs cities (agency_id comes straight from the
+  // feed, already remapped by import_gtfs.py) — kept only because
+  // gtfs_routes_to_json.py expects the key to exist. Leave empty.
+  "operatorAliases": {},
+
+  "schedule": {
+    // only used as a routing fallback; irrelevant here since real GTFS
+    // trip times already encode actual travel time
+    "averageSpeedKmh": 18.0,
+    "dwellSeconds": 20,
+    "serviceStart": "05:30:00",
+    "serviceEnd": "23:30:00",
+
+    // Same role as in pattern A: defines the reporting bands and is the
+    // fallback for any line/band where the real feed has too few trips
+    // to compute its own headway
+    // (pipeline/gtfs_routes_to_json.py::compute_frequency_periods).
+    "frequencyPeriods": [
+      { "start": "05:30:00", "end": "08:00:00", "headwaySeconds": 1800, "reliability": "medium" },
+      { "start": "08:00:00", "end": "20:00:00", "headwaySeconds": 900, "reliability": "high" },
+      { "start": "20:00:00", "end": "23:30:00", "headwaySeconds": 1800, "reliability": "medium" }
+    ]
+  },
+
+  // osmPatches is still required — even official-gtfs cities get their
+  // POIs from OSM (pipeline/osm_to_pois.py always runs regardless of
+  // transit source).
+  "osmPatches": {
+    "areaName": "Example City B",
+    "duplicateRelationIds": [],
+    "refAliases": {}
+  }
+}
