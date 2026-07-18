@@ -18,83 +18,83 @@ const STORE      = 'tiles'
 
 // ── IndexedDB helpers ──────────────────────────────────────────────────────
 
-let _db = null
-async function openDB() {
+let _db: IDBDatabase | null = null
+async function openDB(): Promise<IDBDatabase> {
   if (_db) return _db
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = (e) => e.target.result.createObjectStore(STORE)
-    req.onsuccess      = (e) => { _db = e.target.result; resolve(_db) }
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE)
+    req.onsuccess      = () => { _db = req.result; resolve(_db) }
     req.onerror        = () => reject(req.error)
   })
 }
 
-async function idbGet(key) {
+async function idbGet<T>(key: string): Promise<T | null> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const req = db.transaction(STORE).objectStore(STORE).get(key)
-    req.onsuccess = () => resolve(req.result ?? null)
+    req.onsuccess = () => resolve((req.result as T | undefined) ?? null)
     req.onerror   = () => reject(req.error)
   })
 }
 
-async function idbPut(key, value) {
+async function idbPut(key: string, value: unknown): Promise<void> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(value, key)
-    tx.oncomplete = resolve
+    tx.oncomplete = () => resolve()
     tx.onerror    = () => reject(tx.error)
   })
 }
 
-async function idbDelete(key) {
+async function idbDelete(key: string): Promise<void> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.objectStore(STORE).delete(key)
-    tx.oncomplete = resolve
+    tx.oncomplete = () => resolve()
     tx.onerror    = () => reject(tx.error)
   })
 }
 
-async function idbKeys() {
+async function idbKeys(): Promise<string[]> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const req = db.transaction(STORE).objectStore(STORE).getAllKeys()
-    req.onsuccess = () => resolve(req.result)
+    req.onsuccess = () => resolve(req.result as string[])
     req.onerror   = () => reject(req.error)
   })
 }
 
 // ── Key / URL helpers ──────────────────────────────────────────────────────
-function tileUrl(slug) {
+function tileUrl(slug: string): string {
   return `/data/${slug}/tiles.pmtiles`
 }
 
 // ── Module-level shared state ──────────────────────────────────────────────
 
-const downloaded    = ref(new Set())  // IDB keys that have a stored blob
-const progress      = reactive({})    // IDB key → 0-1 while downloading
-const sizes         = reactive({})    // IDB key → bytes stored
-const downloadedAt  = reactive({})    // slug → ISO string (when routing data was last downloaded)
-const updateAvail   = reactive({})    // slug → true when server has newer routing data
-const updatingData  = reactive({})    // slug → true while an updateDataFiles() call is in flight
+const downloaded    = ref(new Set<string>())                 // IDB keys that have a stored blob
+const progress      = reactive<Record<string, number>>({})   // IDB key → 0-1 while downloading
+const sizes         = reactive<Record<string, number>>({})   // IDB key → bytes stored
+const downloadedAt  = reactive<Record<string, string>>({})   // slug → ISO string (when routing data was last downloaded)
+const updateAvail   = reactive<Record<string, boolean>>({})  // slug → true when server has newer routing data
+const updatingData  = reactive<Record<string, boolean>>({})  // slug → true while an updateDataFiles() call is in flight
 let   _initialized  = false
 
 // Silently checks whether the server has newer routing data for a city.
 // Sets updateAvail[slug] if version.json is newer than the stored downloadedAt.
-async function checkForUpdates(slug) {
+async function checkForUpdates(slug: string): Promise<void> {
   try {
     const resp = await fetch(`/data/${slug}/version.json`, { cache: 'no-store' })
     if (!resp.ok) return
-    const { generatedAt } = await resp.json()
+    const { generatedAt } = await resp.json() as { generatedAt: string }
     const localTs = downloadedAt[slug]
     updateAvail[slug] = !localTs || new Date(generatedAt) > new Date(localTs)
   } catch { /* offline or no version.json yet — leave updateAvail unchanged */ }
 }
 
-async function init() {
+async function init(): Promise<void> {
   if (_initialized) return
   _initialized = true
   try {
@@ -106,7 +106,7 @@ async function init() {
       .filter(k => k.startsWith('timetable-'))
       .map(k => k.replace('timetable-', ''))
     await Promise.all(slugsWithData.map(async (slug) => {
-      const ts = await idbGet(`downloadedAt-${slug}`)
+      const ts = await idbGet<string>(`downloadedAt-${slug}`)
       if (ts) downloadedAt[slug] = ts
     }))
 
@@ -121,7 +121,7 @@ async function init() {
 
 // Re-downloads only the routing data files (timetable.bin + stops.bin + routes.json).
 // Much faster than a full tile re-download; tiles almost never change.
-async function updateDataFiles(slug) {
+async function updateDataFiles(slug: string): Promise<void> {
   updatingData[slug] = true
   try {
     const [ttResp, stResp] = await Promise.all([
@@ -160,31 +160,31 @@ export function useOfflineTiles() {
   // Lazy init — populate `downloaded` from IndexedDB on first use.
   init()
 
-  function isDownloaded(slug) {
+  function isDownloaded(slug: string): boolean {
     return downloaded.value.has(slug)
   }
 
-  function isDownloading(slug) {
+  function isDownloading(slug: string): boolean {
     return slug in progress
   }
 
-  function getProgress(slug) {
+  function getProgress(slug: string): number {
     return progress[slug] ?? 0
   }
 
-  function getSizeMb(slug) {
+  function getSizeMb(slug: string): string | null {
     const s = sizes[slug]
     return s ? (s / 1_000_000).toFixed(1) : null
   }
 
   /** Returns the stored tile Blob, or null if not downloaded. */
-  async function getOfflineBlob(slug) {
-    if (downloaded.value.has(slug)) return idbGet(slug)
+  async function getOfflineBlob(slug: string): Promise<Blob | null> {
+    if (downloaded.value.has(slug)) return idbGet<Blob>(slug)
     return null
   }
 
   /** Downloads tiles for the city and stores in IndexedDB. */
-  async function downloadCity(slug) {
+  async function downloadCity(slug: string): Promise<void> {
     if (slug in progress) return
     progress[slug] = 0
 
@@ -192,7 +192,7 @@ export function useOfflineTiles() {
       // XHR gives real-time progress via onprogress and is more reliable than
       // fetch() streaming on iOS Safari in standalone (home-screen PWA) mode,
       // where ReadableStream from fetch is unreliable in some WebKit versions.
-      const blob = await new Promise((resolve, reject) => {
+      const blob = await new Promise<Blob>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('GET', tileUrl(slug))
         xhr.responseType = 'blob'
@@ -200,7 +200,7 @@ export function useOfflineTiles() {
           if (lengthComputable) progress[slug] = loaded / total
         }
         xhr.onload  = () => xhr.status === 200
-          ? resolve(xhr.response)
+          ? resolve(xhr.response as Blob)
           : reject(new Error(`HTTP ${xhr.status}`))
         xhr.onerror = () => reject(new Error('Network error'))
         xhr.send()
@@ -228,7 +228,7 @@ export function useOfflineTiles() {
       } catch { /* non-critical — both get cached on first natural use */ }
 
       // Fetch and store Minotor RAPTOR binaries for offline routing.
-      // Generated by: cd frontend && node scripts/generate_transit_data.mjs
+      // Generated by the pipeline (see pipeline/generate_transit_data.mjs).
       try {
         const [ttResp, stResp] = await Promise.all([
           fetch(`/data/${slug}/timetable.bin`),
@@ -270,13 +270,12 @@ export function useOfflineTiles() {
 
   /**
    * Returns the Minotor RAPTOR binary data for a city, or null if not stored.
-   * Returns { timetableData: Uint8Array, stopsData: Uint8Array }.
    */
-  async function getMinotorData(slug) {
+  async function getMinotorData(slug: string): Promise<{ timetableData: Uint8Array; stopsData: Uint8Array } | null> {
     try {
       const [ttBuf, stBuf] = await Promise.all([
-        idbGet(`timetable-${slug}`),
-        idbGet(`stops-${slug}`),
+        idbGet<ArrayBuffer>(`timetable-${slug}`),
+        idbGet<ArrayBuffer>(`stops-${slug}`),
       ])
       if (!ttBuf || !stBuf) return null
       return { timetableData: new Uint8Array(ttBuf), stopsData: new Uint8Array(stBuf) }
@@ -284,7 +283,7 @@ export function useOfflineTiles() {
   }
 
   /** Removes all stored offline data for a city (tiles + Minotor bins). */
-  async function deleteCity(slug) {
+  async function deleteCity(slug: string): Promise<void> {
     await Promise.all([
       idbDelete(slug),
       idbDelete(`timetable-${slug}`),
@@ -304,15 +303,15 @@ export function useOfflineTiles() {
     } catch { /* ignore */ }
   }
 
-  function getDownloadedAt(slug) {
+  function getDownloadedAt(slug: string): string | null {
     return downloadedAt[slug] ?? null
   }
 
-  function isUpdateAvailable(slug) {
+  function isUpdateAvailable(slug: string): boolean {
     return updateAvail[slug] === true
   }
 
-  function isUpdatingData(slug) {
+  function isUpdatingData(slug: string): boolean {
     return slug in updatingData
   }
 

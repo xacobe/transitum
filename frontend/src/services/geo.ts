@@ -1,5 +1,21 @@
 export const WALK_MPS = 1.25
 
+/** Min/max lat and lon across a set of [lat, lon] points - shared by
+ * anything that needs to fit points into a viewport (MiniMap's MapLibre
+ * bounds, an admin quality-check's inline SVG preview). */
+export function latLonBounds(
+  points: [number, number][],
+): { minLat: number; maxLat: number; minLon: number; maxLon: number } {
+  const lats = points.map(p => p[0])
+  const lons = points.map(p => p[1])
+  return {
+    minLat: Math.min(...lats),
+    maxLat: Math.max(...lats),
+    minLon: Math.min(...lons),
+    maxLon: Math.max(...lons),
+  }
+}
+
 export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const r  = 6371000
   const p1 = (lat1 * Math.PI) / 180

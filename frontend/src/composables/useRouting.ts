@@ -5,7 +5,7 @@ import { useFrequency, findPeriodAt } from '@/composables/useFrequency'
 import { lineKey } from '@/composables/useAgencies'
 import { track } from '@/composables/useAnalytics'
 import { useCityStore } from '@/stores/city'
-import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { getOfflineRouter, type OfflineRouter } from '@/services/offlineRouter'
 import { haversineMeters, WALK_MPS } from '@/services/geo'
 import type {
   Stop, Route, MapLeg, Itinerary, Reliability,
@@ -174,40 +174,21 @@ export function useStopDetail() {
 
 // ── Offline routing (Minotor RAPTOR) ──────────────────────────────────────
 
-// Cached RAPTOR router keyed by "slug:ttByteLen:stByteLen". buildRouter()
-// deserializes ~260KB of binary data on each call — memoizing it eliminates
-// that main-thread cost on repeated searches with the same downloaded data.
-// The key changes automatically when updateDataFiles() stores new binaries.
-interface RouterCache {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  router: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stopsIndex: any
-}
-let _routerCacheKey: string | null = null
-let _routerCacheValue: RouterCache | null = null
-
 // Attempts a full offline RAPTOR route using locally cached Minotor binaries.
-// Minotor is imported dynamically so its ~80 kB chunk is only loaded when
-// offline data is actually present — online-only users never pay the cost.
+// The router instance itself is built and memoized by services/offlineRouter
+// (shared with useUpcomingDepartures); Minotor is only ever loaded via
+// dynamic import so its ~80 kB chunk stays out of the main bundle.
 async function tryLocalRouting(params: RoutingParams, citySlug: string): Promise<Itinerary[]> {
   try {
-    const { getMinotorData } = useOfflineTiles()  // singleton — safe to call outside setup
-    const [minotorData, routes]: [Awaited<ReturnType<typeof getMinotorData>>, Route[] | null] =
+    const [offline, routes]: [OfflineRouter | null, Route[] | null] =
       await Promise.all([
-        getMinotorData(citySlug),
+        getOfflineRouter(citySlug),
         loadCityRoutes(citySlug).catch(() => null),
       ])
-    if (!minotorData) return []
-    const { buildRouter, findOfflineRoutes } = await import('@/composables/useMinotorRouting')
-    const cacheKey = `${citySlug}:${minotorData.timetableData.byteLength}:${minotorData.stopsData.byteLength}`
-    if (_routerCacheKey !== cacheKey) {
-      _routerCacheValue = buildRouter(minotorData.timetableData, minotorData.stopsData) as RouterCache
-      _routerCacheKey = cacheKey
-    }
-    const { router, stopsIndex } = _routerCacheValue!
+    if (!offline) return []
+    const { findOfflineRoutes } = await import('@/composables/useMinotorRouting')
     return findOfflineRoutes(
-      router, stopsIndex,
+      offline.router, offline.stopsIndex,
       params.fromLat, params.fromLon, params.toLat, params.toLon,
       params.time, routes, params.fromName, params.toName,
     ) as Itinerary[]

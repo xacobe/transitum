@@ -8,6 +8,7 @@ import { track } from '@/composables/useAnalytics'
 import { useCityStore } from '@/stores/city'
 import { formatTime } from '@/services/format'
 import { buildResultsQuery, parseResultsQuery } from '@/services/resultsQuery'
+import { useNavigation } from '@/composables/useNavigation'
 import type { Itinerary, BusLeg } from '@/types'
 
 interface ItinerarySearchOptions {
@@ -48,6 +49,7 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
   const { t } = useI18n()
   const { isWithinServiceHours, nextServiceStart } = useFrequency()
   const { itineraries, loading, error, isOffline, isNextAvailable, fetchPlan } = useItineraryPlan()
+  const { goBack: navGoBack } = useNavigation()
   const cityStore = useCityStore()
 
   const sortMode = ref<'rapide' | 'tot'>('rapide')
@@ -122,8 +124,7 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
   })
 
   function goBack(): void {
-    if (window.history.state?.back) { router.back(); return }
-    router.push({ name: backRouteName })
+    navGoBack(backRouteName)
   }
 
   function swapOriginDestination(): void {

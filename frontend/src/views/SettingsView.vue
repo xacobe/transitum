@@ -11,6 +11,7 @@ import { CITIES } from '@/cities'
 import { setLocale, localeName, SUPPORTED_LOCALES } from '@/i18n'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { APP_NAME } from '@/services/appConfig'
+import { formatShortDate } from '@/services/format'
 import {
   IconWorld,
   IconSun,
@@ -47,14 +48,6 @@ const {
 const downloadErrors = ref<Record<string, boolean>>({})
 const downloadErrMsg = ref<Record<string, string>>({})
 const updateErrors   = ref<Record<string, boolean>>({})
-
-function formatDate(isoString: string | null | undefined): string {
-  if (!isoString) return ''
-  return new Date(isoString).toLocaleDateString(locale.value, {
-    day: 'numeric',
-    month: 'short',
-  })
-}
 
 async function handleDownload(slug: string) {
   downloadErrors.value[slug] = false
@@ -159,7 +152,7 @@ function close() {
             <span class="city-name">{{ c.displayName }}</span>
             <span class="city-sub">
               <template v-if="isDownloaded(c.slug)">
-                {{ t('settings.offlineReady') }}{{ getDownloadedAt(c.slug) ? ' · ' + formatDate(getDownloadedAt(c.slug)) : '' }}
+                {{ t('settings.offlineReady') }}{{ getDownloadedAt(c.slug) ? ' · ' + formatShortDate(getDownloadedAt(c.slug), locale) : '' }}
               </template>
               <template v-else>{{ t('settings.offlineSub') }}</template>
             </span>

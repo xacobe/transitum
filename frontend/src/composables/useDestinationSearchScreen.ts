@@ -2,6 +2,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDestinationSearch } from '@/composables/useDestinationSearch'
+import { useNavigation } from '@/composables/useNavigation'
 import { buildResultsQuery } from '@/services/resultsQuery'
 import type { SearchResult } from '@/types'
 
@@ -20,6 +21,7 @@ export function useDestinationSearchScreen({ homeRouteName, resultsRouteName }: 
   const router = useRouter()
   const { t } = useI18n()
   const { results, loading, search } = useDestinationSearch()
+  const { goBack: navGoBack } = useNavigation()
 
   const field = computed<'origin' | 'destination'>(() =>
     route.query.field === 'origin' ? 'origin' : 'destination',
@@ -71,18 +73,19 @@ export function useDestinationSearchScreen({ homeRouteName, resultsRouteName }: 
   }
 
   function goBack(): void {
-    if (window.history.state?.back) { router.back(); return }
-    if (hasDestination.value) {
-      router.push({
-        name: resultsRouteName,
-        query: buildResultsQuery(
-          { lat: Number(route.query.originLat), lon: Number(route.query.originLon), name: (route.query.originName as string) ?? '' },
-          { lat: Number(route.query.destLat), lon: Number(route.query.destLon), name: (route.query.destName as string) ?? '' },
-        ),
-      })
-      return
-    }
-    router.push({ name: homeRouteName })
+    navGoBack(() => {
+      if (hasDestination.value) {
+        router.push({
+          name: resultsRouteName,
+          query: buildResultsQuery(
+            { lat: Number(route.query.originLat), lon: Number(route.query.originLon), name: (route.query.originName as string) ?? '' },
+            { lat: Number(route.query.destLat), lon: Number(route.query.destLon), name: (route.query.destName as string) ?? '' },
+          ),
+        })
+        return
+      }
+      router.push({ name: homeRouteName })
+    })
   }
 
   return { results, loading, placeholder, query, inputEl, hasQuery, onInput, selectResult, goBack }

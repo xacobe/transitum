@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import MiniMap from '@/components/map/MiniMap.vue'
 import MapStopPanel from '@/components/shared/MapStopPanel.vue'
@@ -17,14 +17,13 @@ import ReportButton from '@/components/shared/ReportButton.vue'
 import { useNavigation } from '@/composables/useNavigation'
 
 const route = useRoute()
-const router = useRouter()
 const { t } = useI18n()
 const { colorFor } = useLineColor()
 const { hasMultipleAgencies } = useAgencies()
 const favorites = useFavoritesStore()
 const city = useCityStore()
 
-const { openStop, openLine } = useNavigation()
+const { openStop, openLine, goBack: navGoBack } = useNavigation()
 const mapSelectedStop = ref<{ id: string; name: string } | null>(null)
 
 // Reserves exactly as much extra scroll room below the list as
@@ -104,8 +103,7 @@ const mapRouteLegs = computed(() => {
 })
 
 function goBack() {
-  if (window.history.state?.back) { router.back(); return }
-  router.push({ name: 'lines' })
+  navGoBack('lines')
 }
 
 function toggleFavorite() {

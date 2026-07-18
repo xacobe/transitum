@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import MiniMap from '@/components/map/MiniMap.vue'
 import StopRow from '@/components/shared/StopRow.vue'
@@ -26,7 +26,6 @@ const scheduleFor = ref<StopLine | null>(null)
 import { useNavigation } from '@/composables/useNavigation'
 
 const route = useRoute()
-const router = useRouter()
 const { t } = useI18n()
 const { isWithinServiceHours } = useFrequency()
 const { stop, lines, nearbyStops, loading, error, fetchStop } = useStopDetail()
@@ -71,7 +70,7 @@ function toggleFavorite() {
 const stopId   = computed(() => stop.value?.id   ?? '')
 const stopName = computed(() => stop.value?.name ?? '')
 
-const { openStop, openLine } = useNavigation()
+const { openStop, openLine, goBack: navGoBack } = useNavigation()
 
 // Lines with a real published schedule open a modal with today's full
 // timetable at this stop (see LineScheduleModal); frequency-based lines
@@ -85,8 +84,7 @@ function selectLine(line: StopLine) {
 }
 
 function goBack() {
-  if (window.history.state?.back) { router.back(); return }
-  router.push({ name: 'home' })
+  navGoBack('home')
 }
 </script>
 

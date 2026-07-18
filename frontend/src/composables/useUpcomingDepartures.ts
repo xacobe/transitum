@@ -1,41 +1,28 @@
 import { ref } from 'vue'
 import type { StopLine } from '@/types'
 import { useCityStore } from '@/stores/city'
-import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { getOfflineRouter } from '@/services/offlineRouter'
 import { fetchStopDepartures } from '@/services/routingClient'
 
 // Well above any real day's trip count for a single line at one stop - the
 // cap exists to bound the search loop, not because it's a meaningful count.
 const FULL_DAY_MAX_COUNT = 60
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface DeparturesCache { timetable: any; stopsIndex: any }
-let _cacheKey: string | null = null
-let _cacheValue: DeparturesCache | null = null
-
 function nowLabel(): string {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
 }
 
-// Mirrors useRouting.ts's tryLocalRouting caching pattern, but keeps its own
-// cache - departures and full itinerary planning are rarely used back-to-back
-// in the same visit, so sharing one cache isn't worth coupling the two files.
+// Offline equivalent of fetchStopDepartures - the memoized router instance
+// comes from services/offlineRouter (shared with useRouting's planner).
 async function tryOfflineDepartures(
   citySlug: string, stopId: string, shortNames: string[], time: string, maxCount?: number,
 ): Promise<Record<string, string[]> | null> {
   try {
-    const { getMinotorData } = useOfflineTiles()
-    const minotorData = await getMinotorData(citySlug)
-    if (!minotorData) return null
-    const { buildRouter, findOfflineDepartures } = await import('@/composables/useMinotorRouting')
-    const cacheKey = `${citySlug}:${minotorData.timetableData.byteLength}:${minotorData.stopsData.byteLength}`
-    if (_cacheKey !== cacheKey) {
-      _cacheValue = buildRouter(minotorData.timetableData, minotorData.stopsData) as DeparturesCache
-      _cacheKey = cacheKey
-    }
-    const { timetable, stopsIndex } = _cacheValue!
-    return findOfflineDepartures(timetable, stopsIndex, stopId, shortNames, time, maxCount)
+    const offline = await getOfflineRouter(citySlug)
+    if (!offline) return null
+    const { findOfflineDepartures } = await import('@/composables/useMinotorRouting')
+    return findOfflineDepartures(offline.timetable, offline.stopsIndex, stopId, shortNames, time, maxCount)
   } catch {
     return null
   }
