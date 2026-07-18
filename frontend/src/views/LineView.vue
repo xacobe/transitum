@@ -120,8 +120,8 @@ function toggleFavorite() {
 
 <template>
   <div class="screen">
-    <div class="header">
-      <button type="button" class="back-btn" :aria-label="t('common.back')" @click="goBack">
+    <div class="detail-header">
+      <button type="button" class="detail-header__back" :aria-label="t('common.back')" @click="goBack">
         <IconChevronLeft :size="24" />
       </button>
       <LineBadge v-if="line" :short-name="line.shortName" :agency-id="line.agencyId" :size="40" />
@@ -155,7 +155,7 @@ function toggleFavorite() {
 
     <div
       v-if="line && line.directions.length > 1"
-      class="segmented"
+      class="segmented segmented--inset"
       :class="{ 'segmented--many': line.directions.length > 2 }"
     >
       <button
@@ -215,22 +215,6 @@ function toggleFavorite() {
 </template>
 
 <style scoped>
-.header {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: 14px 16px;
-}
-
-.back-btn {
-  color: var(--color-text);
-  flex: none;
-}
-
 .fav-btn {
   flex: none;
 }
@@ -260,18 +244,6 @@ function toggleFavorite() {
   overflow: hidden;
 }
 
-.segmented {
-  width: calc(100% - 32px);
-  max-width: var(--content-max-width);
-  margin: 0 auto 12px;
-}
-
-.segmented button {
-  flex: 1;
-  padding: 8px 10px;
-  text-align: center;
-}
-
 /* More than 2 destination variants (a branching line, e.g. Vigo's line 7):
    equal-flex would squeeze every chip's label unreadable. Size chips to
    their own text and let the bar scroll horizontally instead. */
@@ -290,15 +262,11 @@ function toggleFavorite() {
 }
 
 .sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 16px;
-  flex: 1;
-  overflow-y: auto;
   /* --panel-space (set from panelHeight, see the ResizeObserver above)
-     extends the bottom padding by exactly MapStopPanel's own height while
-     it's open, so the list's true scrollable end lines up with the
-     panel's top edge - the last stop can scroll all the way up clear of
-     it, with no dead space left over past that point. */
+     extends the module's bottom padding by exactly MapStopPanel's own
+     height while it's open, so the list's true scrollable end lines up
+     with the panel's top edge - the last stop can scroll all the way up
+     clear of it, with no dead space left over past that point. */
   padding-bottom: calc(16px + var(--panel-space, 0px));
 }
 

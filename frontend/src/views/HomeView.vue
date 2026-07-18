@@ -13,6 +13,7 @@ import { IconMapPinOff } from '@tabler/icons-vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
 import { useAllCityStops } from '@/composables/useAllCityStops'
 import { useOriginLocation } from '@/composables/useOriginLocation'
+import { useNavigation } from '@/composables/useNavigation'
 import { useCityStore } from '@/stores/city'
 import type { Stop } from '@/types'
 
@@ -21,6 +22,7 @@ const { t } = useI18n()
 const appUrl = import.meta.env.VITE_APP_URL ?? '/'
 const { fetchNearby } = useNearbyStops()       // still used for origin geolocation flow
 const { stops: allStops } = useAllCityStops()  // all city stops for the map
+const { openStop: openStopView } = useNavigation()
 const city = useCityStore()
 const selectedStop   = ref<Stop | null>(null)
 const gpsPosition    = ref<[number, number] | null>(null)   // live GPS fix → pulse marker
@@ -32,7 +34,7 @@ const isIosPwa =
   typeof navigator !== 'undefined' &&
   (navigator as Navigator & { standalone?: boolean }).standalone === true
 
-// The nearby-stops radius is per-city (see frontend/src/cities.js),
+// The nearby-stops radius is per-city (see frontend/src/cities.ts),
 // fetchNearby reads it from the active city.
 const { origin, geoErrorCode, setOrigin, goSearchOrigin, goSearchDestination } = useOriginLocation({
   homeRouteName: 'home',
@@ -97,7 +99,7 @@ function closeStopPreview() {
 
 function goStopDetails() {
   if (!selectedStop.value) return
-  router.push({ name: 'stop', params: { stopId: selectedStop.value.id } })
+  openStopView(selectedStop.value.id)
 }
 
 function useStopAsOrigin() {

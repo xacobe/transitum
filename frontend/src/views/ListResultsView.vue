@@ -152,13 +152,6 @@ function viewOnMap() {
 </template>
 
 <style scoped>
-.sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 16px;
-  flex: 1;
-  overflow-y: auto;
-}
-
 .summary {
   font: var(--text-heading-sm);
   color: var(--color-text);

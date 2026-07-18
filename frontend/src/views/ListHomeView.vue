@@ -8,6 +8,7 @@ import ListRow from '@/components/shared/ListRow.vue'
 import SearchCard from '@/components/shared/SearchCard.vue'
 import StopOriginModal from '@/components/list/StopOriginModal.vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
+import { useNavigation } from '@/composables/useNavigation'
 import { useOriginLocation } from '@/composables/useOriginLocation'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
@@ -27,6 +28,7 @@ const NEARBY_LIST_MAX = 5
 
 const router = useRouter()
 const { t } = useI18n()
+const { openStop: openStopView } = useNavigation()
 const city = useCityStore()
 const { isDownloaded, isUpdateAvailable } = useOfflineTiles()
 const { isOnline } = useOnlineStatus()
@@ -78,7 +80,7 @@ function useStopAsOrigin() {
 
 function goStopDetails() {
   if (!selectedStop.value) return
-  router.push({ name: 'stop', params: { stopId: selectedStop.value.id } })
+  openStopView(selectedStop.value.id)
 }
 </script>
 
@@ -89,7 +91,7 @@ function goStopDetails() {
     </PageHeader>
 
     <div class="body">
-      <div class="screen-content sheet pattern-tile-bg">
+      <div class="screen-content sheet sheet--flex pattern-tile-bg">
         <div class="content-inner">
           <div class="nearby-section">
             <div class="section-title">{{ t('list.nearbyStops') }}</div>
@@ -98,7 +100,7 @@ function goStopDetails() {
             </p>
             <ListRow v-for="stop in nearbyStops" :key="stop.id" @click="openStop(stop)">
               <template #leading>
-                <span class="stop-icon" aria-hidden="true"><IconBusStop :size="18" /></span>
+                <span class="row-icon row-icon--field" aria-hidden="true"><IconBusStop :size="18" /></span>
               </template>
               <span class="stop-name">{{ stop.name }}</span>
               <span v-if="stop.lines?.length" class="stop-lines">
@@ -176,6 +178,13 @@ function goStopDetails() {
 </template>
 
 <style scoped>
+/* Only this view's .sheet needs the flex column (see .content-inner's
+   comment below) - not a shared modules.css block, single consumer. */
+.sheet--flex {
+  display: flex;
+  flex-direction: column;
+}
+
 .body {
   flex: 1;
   position: relative;
@@ -184,16 +193,8 @@ function goStopDetails() {
   min-height: 0;
 }
 
-.sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* This view pushes SearchCard to the bottom via margin-top: auto on a
-   flex column (.bottom-fields below) - .content-inner needs the same
+/* This view pushes SearchCard to the bottom via the spacer inside a flex
+   column (.sheet--flex on the sheet) - .content-inner needs the same
    flex behavior so that still works one level deeper. */
 .content-inner {
   flex: 1;
@@ -212,17 +213,6 @@ function goStopDetails() {
   font: var(--text-caption);
   color: var(--color-muted);
   margin-bottom: var(--space-2);
-}
-
-.stop-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-icon);
-  background: var(--color-field);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
 }
 
 .stop-name {

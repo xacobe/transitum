@@ -273,7 +273,7 @@ const segmentedActive = ref('rapide')
         </div>
       </div>
 
-      <h3 class="h3">Line color palette (<code>useLineColor.js</code> hash)</h3>
+      <h3 class="h3">Line color palette (<code>useLineColor.ts</code> hash)</h3>
       <p class="note">
         12 color pairs, assigned by hashing <code>shortName</code>
         (or <code>agencyId::shortName</code> once a city has more than one agency).
@@ -436,7 +436,7 @@ const segmentedActive = ref('rapide')
       <div class="demo-phone">
         <ListRow tag="div">
           <template #leading>
-            <span class="generic-icon"><IconBusStop :size="18" /></span>
+            <span class="row-icon row-icon--field"><IconBusStop :size="18" /></span>
           </template>
           <span class="row-text">ListRow.vue (generic)</span>
           <template #trailing>
@@ -581,12 +581,10 @@ const segmentedActive = ref('rapide')
 
 /* Unlike every other screen, this page is a wide reference doc (color/
    icon grids benefit from real desktop width) - it never adds a
-   .content-inner wrapper, so it's never capped to begin with. */
+   .content-inner wrapper, so it's never capped to begin with. Extra
+   bottom padding over the module default for the long scroll. */
 .styleguide .sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 48px;
-  flex: 1;
-  overflow-y: auto;
+  padding-bottom: 48px;
 }
 
 /* .body-text is defined globally in base.css — .intro adds layout only */
@@ -770,17 +768,6 @@ const segmentedActive = ref('rapide')
 .row-text {
   font: 700 13px var(--font-ui);
   color: var(--color-text);
-}
-
-.generic-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--color-field);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
 }
 
 .logo-demo {

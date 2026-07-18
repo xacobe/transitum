@@ -5,6 +5,7 @@ import LegChip from './LegChip.vue'
 import ItineraryLegRow from './ItineraryLegRow.vue'
 import FrequencyBadge from '@/components/shared/FrequencyBadge.vue'
 import { useFrequency } from '@/composables/useFrequency'
+import { busLinesOf } from '@/composables/useItinerarySearch'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useCityStore } from '@/stores/city'
 import { loadCityRoutesMeta } from '@/services/cityData'
@@ -46,7 +47,7 @@ const lastLeg = computed(() => props.itinerary.legs[props.itinerary.legs.length 
 // The frequency/reliability of the moment this itinerary actually runs,
 // not of whenever the user happens to be looking at the screen - outside
 // service hours the search already jumps to the next valid departure
-// (see useItinerarySearch.js), so "now" would often be wrong here (e.g.
+// (see useItinerarySearch.ts), so "now" would often be wrong here (e.g.
 // searching at 22:00 for tomorrow's first bus at 05:30).
 const firstBusLeg = computed(() =>
   props.itinerary.legs.find((leg): leg is BusLeg => leg.mode === 'BUS'),
@@ -92,19 +93,15 @@ const subtitle = computed(() => {
 })
 
 
-// An itinerary has no id of its own (see stores/favorites.js) - it's
+// An itinerary has no id of its own (see stores/favorites.ts) - it's
 // recognized by origin + destination + bus lines used: origin/destination
 // alone don't distinguish between the different alternatives of the same
 // search.
 const favFromName = computed(() => props.fromName ?? firstLeg.value.from.name)
 const favToName = computed(() => props.toName ?? lastLeg.value.to.name)
-const favLines = computed<string[]>(() => [
-  ...new Set(
-    props.itinerary.legs
-      .filter((leg): leg is BusLeg => leg.mode === 'BUS')
-      .map((leg) => leg.route.shortName),
-  ),
-])
+// Same line-sequence identity used everywhere else an itinerary is keyed
+// (favoriting, preselecting a favorited alternative) - see useItinerarySearch.
+const favLines = computed<string[]>(() => busLinesOf(props.itinerary))
 
 // When the origin was the user's GPS position, replace the live "My location"
 // label with a fixed friendly name so the saved itinerary doesn't imply it

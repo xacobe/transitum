@@ -8,7 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 
 // Set once when this chunk is first loaded (before any map instance is created).
-// Kept here rather than main.js so maplibre-gl stays in the lazy MiniMap chunk
+// Kept here rather than main.ts so maplibre-gl stays in the lazy MiniMap chunk
 // and is not pulled into the main bundle.
 ;(maplibregl as typeof maplibregl & { workerCount: number }).workerCount = 1
 import { useThemeStore } from '@/stores/theme'

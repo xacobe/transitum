@@ -42,6 +42,23 @@ function routeKey(fromName: string, toName: string, lines: string[], city: strin
   return `${city}::${fromName}→${toName}::${(lines ?? []).join(',')}`
 }
 
+// Matches by agencyId too once a stored entry has one - older entries
+// saved before agencies existed don't, and are matched by shortName
+// alone (always correct in practice: there's only ever been one
+// agency, so no real entry predates a second one).
+function matchesLine(
+  stored: FavoriteLine,
+  agencyId: string | null | undefined,
+  shortName: string,
+  city: string,
+): boolean {
+  return (
+    stored.shortName === shortName &&
+    stored.city === city &&
+    (stored.agencyId == null || stored.agencyId === agencyId)
+  )
+}
+
 function save(key: string, data: unknown): void {
   localStorage.setItem(key, JSON.stringify(data))
 }
@@ -116,21 +133,12 @@ export const useFavoritesStore = defineStore('favorites', {
     persistRoutes(): void {
       save(ROUTES_STORAGE_KEY, this.favoriteRoutes)
     },
-    // Matches by agencyId too once a stored entry has one - older entries
-    // saved before agencies existed don't, and are matched by shortName
-    // alone (always correct in practice: there's only ever been one
-    // agency, so no real entry predates a second one).
     isFavoriteLine(agencyId: string | null | undefined, shortName: string, city: string): boolean {
-      return this.favoriteLines.some(
-        (l) => l.shortName === shortName && l.city === city && (l.agencyId == null || l.agencyId === agencyId),
-      )
+      return this.favoriteLines.some((l) => matchesLine(l, agencyId, shortName, city))
     },
     toggleFavoriteLine(line: FavoriteLine): void {
-      const idx = this.favoriteLines.findIndex(
-        (l) =>
-          l.shortName === line.shortName &&
-          l.city === line.city &&
-          (l.agencyId == null || l.agencyId === line.agencyId),
+      const idx = this.favoriteLines.findIndex((l) =>
+        matchesLine(l, line.agencyId, line.shortName, line.city),
       )
       if (idx >= 0) {
         this.favoriteLines.splice(idx, 1)
@@ -141,10 +149,7 @@ export const useFavoritesStore = defineStore('favorites', {
       this.persistLines()
     },
     removeFavoriteLine(agencyId: string | null | undefined, shortName: string, city: string): void {
-      this.favoriteLines = this.favoriteLines.filter(
-        (l) =>
-          !(l.shortName === shortName && l.city === city && (l.agencyId == null || l.agencyId === agencyId)),
-      )
+      this.favoriteLines = this.favoriteLines.filter((l) => !matchesLine(l, agencyId, shortName, city))
       this.persistLines()
     },
     persistLines(): void {

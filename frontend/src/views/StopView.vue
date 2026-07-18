@@ -90,13 +90,13 @@ function goBack() {
 
 <template>
   <div class="screen">
-    <div class="header">
-      <button type="button" class="back-btn" :aria-label="t('common.back')" @click="goBack">
+    <div class="detail-header">
+      <button type="button" class="detail-header__back back-btn" :aria-label="t('common.back')" @click="goBack">
         <IconChevronLeft :size="24" />
       </button>
-      <div class="title-block">
-        <div class="eyebrow">{{ t('stop.label') }}</div>
-        <div class="stop-name">{{ stop?.name ?? '…' }}</div>
+      <div class="detail-header__titles">
+        <div class="detail-header__eyebrow">{{ t('stop.label') }}</div>
+        <div class="detail-header__title">{{ stop?.name ?? '…' }}</div>
       </div>
     </div>
 
@@ -167,7 +167,7 @@ function goBack() {
             @click="openStop(ns.id)"
           >
             <template #leading>
-              <span class="walk-icon" aria-hidden="true"><IconWalk :size="18" /></span>
+              <span class="row-icon row-icon--field walk-icon" aria-hidden="true"><IconWalk :size="18" /></span>
             </template>
             <span class="nearby-name">{{ ns.name }}</span>
             <span class="walk-time">{{ t('stop.walkMin', { min: ns.walkMin }) }}</span>
@@ -182,32 +182,14 @@ function goBack() {
 </template>
 
 <style scoped>
-.header {
-  flex: none;
-  display: flex;
+/* Top-aligned (not the module's centered default): the eyebrow + title
+   stack is taller than the 24px chevron, which should hug the eyebrow. */
+.detail-header {
   align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: 14px 16px;
 }
 
 .back-btn {
-  color: var(--color-text);
   padding: 4px;
-}
-
-.eyebrow {
-  font: var(--text-eyebrow);
-  letter-spacing: var(--tracking-wide);
-  color: var(--color-accent);
-}
-
-.stop-name {
-  font: var(--text-title);
-  color: var(--color-text);
-  margin-top: 2px;
 }
 
 .map-wrap {
@@ -248,9 +230,10 @@ function goBack() {
   color: var(--color-fav-saved-text);
 }
 
+/* Flush against the actions row above - no top padding on top of the
+   module's default. */
 .sheet {
-  background: var(--color-sheet-bg);
-  padding: 0 16px 16px;
+  padding-top: 0;
 }
 
 .list-header {
@@ -282,15 +265,7 @@ function goBack() {
 }
 
 .walk-icon {
-  width: var(--size-icon-tile);
-  height: var(--size-icon-tile);
-  border-radius: var(--radius-icon);
-  background: var(--color-field);
   color: var(--color-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
 }
 
 .nearby-name {

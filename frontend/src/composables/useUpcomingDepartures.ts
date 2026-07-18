@@ -3,14 +3,15 @@ import type { StopLine } from '@/types'
 import { useCityStore } from '@/stores/city'
 import { getOfflineRouter } from '@/services/offlineRouter'
 import { fetchStopDepartures } from '@/services/routingClient'
+import { formatTime } from '@/services/format'
 
 // Well above any real day's trip count for a single line at one stop - the
 // cap exists to bound the search loop, not because it's a meaningful count.
 const FULL_DAY_MAX_COUNT = 60
 
+// "HH:MM:00" - same shape useItinerarySearch builds for fetchPlan's `time`.
 function nowLabel(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
+  return `${formatTime(new Date())}:00`
 }
 
 // Offline equivalent of fetchStopDepartures - the memoized router instance

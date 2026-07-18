@@ -37,7 +37,7 @@ const { t } = useI18n()
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   box-shadow: var(--shadow-sheet);
 }

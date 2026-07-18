@@ -168,8 +168,9 @@ function onPickDestination(pt: { lat: number; lon: number }) {
   height: 50%;
 }
 
+/* Tighter than the module default: the map above already provides the
+   breathing room this half-height sheet would otherwise pad for. */
 .sheet {
-  background: var(--color-sheet-bg);
   padding: 15px 14px;
 }
 

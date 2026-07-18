@@ -4,48 +4,19 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 /* ── Sheet ──────────────────────────────────────────────────────────────────
-   Primary content panel in list/detail views (green background card). */
+   Primary content panel in list/detail views (green background card).
+   background-color, not the `background` shorthand: modules.css loads after
+   base.css, so the shorthand's implicit background-image:none would override
+   .pattern-tile-bg's image on sheets that combine both classes. */
 .sheet {
-  background: var(--color-sheet-bg);
+  background-color: var(--color-sheet-bg);
   padding: var(--space-2) var(--gutter) var(--space-4);
 }
 
-.sheet--scroll {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.sheet--flex {
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Section header ─────────────────────────────────────────────────────────
-   Titled separator used above list groups (stops nearby, departures, etc.). */
-.section-header {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-3) 0 var(--space-2);
-}
-
-.section-header__title {
-  font: var(--text-label-strong);
-  color: var(--color-text);
-}
-
-.section-header__note {
-  font: var(--text-caption-sm);
-  color: var(--color-muted);
-}
-
-.section-header--divided {
-  border-top: 1px solid var(--color-border);
-  margin-top: var(--space-3);
-}
-
 /* ── Row icon ───────────────────────────────────────────────────────────────
-   Colored 36×36 tile icon used in list rows and hint banners. */
+   36×36 tile icon used in list rows (nearby stops, favorites, search
+   results). The --field variant sets no color: sites inherit the row's
+   text color unless they set their own (e.g. StopView's muted walk icon). */
 .row-icon {
   width: var(--size-icon-tile);
   height: var(--size-icon-tile);
@@ -56,26 +27,18 @@
   flex-shrink: 0;
 }
 
-.row-icon--accent {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-}
-
 .row-icon--field {
-  background: var(--color-chip-bg);
-  color: var(--color-muted);
-}
-
-.row-icon--info {
-  background: var(--color-info-bg);
-  color: var(--color-info-text);
+  background: var(--color-field);
 }
 
 /* ── Detail header ──────────────────────────────────────────────────────────
-   Back-button + title block used in StopView and LineView. */
+   Back-button + title block used in StopView, LineView and HelpView.
+   Center-aligned by default (single-line titles against the 24px chevron);
+   StopView overrides to flex-start for its taller eyebrow + title stack. */
 .detail-header {
+  flex: none;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
   padding: 14px var(--gutter);
   max-width: var(--content-max-width);
@@ -88,7 +51,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--color-header-text);
+  color: var(--color-text);
 }
 
 .detail-header__titles {
@@ -102,62 +65,12 @@
 .detail-header__eyebrow {
   font: var(--text-eyebrow);
   letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
   color: var(--color-accent);
 }
 
 .detail-header__title {
   font: var(--text-title);
-  color: var(--color-header-text);
-}
-
-/* ── Hint banner ────────────────────────────────────────────────────────────
-   Informational banner with icon (offline update hint in ListHomeView). */
-.hint-banner {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  padding: var(--space-3) var(--space-4);
-}
-
-.hint-banner__icon {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-icon);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.hint-banner__icon--update {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-}
-
-.hint-banner__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.hint-banner__title {
-  font: var(--text-label-strong);
   color: var(--color-text);
-}
-
-.hint-banner__sub {
-  font: var(--text-caption-sm);
-  color: var(--color-muted);
-}
-
-.hint-banner__arrow {
-  font-size: 18px;
-  color: var(--color-muted);
-  align-self: center;
 }
 
 /* ── Bottom sheet ───────────────────────────────────────────────────────────
@@ -226,11 +139,6 @@
 .btn--primary {
   background: var(--color-accent);
   color: var(--color-accent-text);
-}
-.btn--primary--outline {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-  border: solid 1px var(--color-accent-text);
 }
 
 .btn--secondary {

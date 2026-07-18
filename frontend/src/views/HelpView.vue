@@ -41,8 +41,8 @@ function goBack() {
 
 <template>
   <div class="screen">
-    <div class="header">
-      <button type="button" class="back-btn" :aria-label="t('common.back')" @click="goBack">
+    <div class="detail-header">
+      <button type="button" class="detail-header__back" :aria-label="t('common.back')" @click="goBack">
         <IconChevronLeft :size="24" />
       </button>
       <div class="title">{{ t('settings.help') }}</div>
@@ -90,22 +90,6 @@ function goBack() {
 </template>
 
 <style scoped>
-.header {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: 14px 16px;
-}
-
-.back-btn {
-  color: var(--color-text);
-  flex: none;
-}
-
 .title {
   font: 800 18px var(--font-ui);
   color: var(--color-text);

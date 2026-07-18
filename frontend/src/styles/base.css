@@ -111,7 +111,7 @@ ol {
    Used in LineView and LinesView where the control sits below the map. */
 .segmented--inset {
   width: calc(100% - 2 * var(--gutter));
-  max-width: calc(var(--content-max-width) - 2 * var(--gutter));
+  max-width: var(--content-max-width);
   margin: 0 auto var(--space-3);
 }
 

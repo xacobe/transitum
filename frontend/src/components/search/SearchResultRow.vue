@@ -39,7 +39,7 @@ defineEmits(['select'])
 <template>
   <ListRow @click="$emit('select')">
     <template #leading>
-      <span class="icon" aria-hidden="true">
+      <span class="row-icon row-icon--field" aria-hidden="true">
         <component :is="ICONS[result.icon] ?? IconMapPin" :size="18" />
       </span>
     </template>
@@ -49,17 +49,6 @@ defineEmits(['select'])
 </template>
 
 <style scoped>
-.icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-icon);
-  background: var(--color-field);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
-
 .name {
   font: 700 13px var(--font-ui);
   color: var(--color-text);

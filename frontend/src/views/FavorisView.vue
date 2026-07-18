@@ -82,7 +82,7 @@ function openRoute(fav: FavoriteRoute) {
           @click="openStop(fav.id)"
         >
           <template #leading>
-            <span class="fav-icon" aria-hidden="true"><IconBusStop :size="18" /></span>
+            <span class="row-icon row-icon--accent" aria-hidden="true"><IconBusStop :size="18" /></span>
           </template>
           <span class="fav-name">{{ fav.name }}</span>
           <span class="fav-sub">{{ t('favoris.lineCount', { n: fav.lineCount }, fav.lineCount) }}</span>
@@ -114,7 +114,7 @@ function openRoute(fav: FavoriteRoute) {
           @click="openRoute(route)"
         >
           <template #leading>
-            <span class="route-icon" aria-hidden="true"><IconArrowsLeftRight :size="16" /></span>
+            <span class="row-icon row-icon--accent" aria-hidden="true"><IconArrowsLeftRight :size="16" /></span>
           </template>
           <span class="route-name">{{ route.fromName }} → {{ route.toName }}</span>
           <span v-if="route.lines.length > 0" class="route-lines">
@@ -174,9 +174,11 @@ function openRoute(fav: FavoriteRoute) {
 </template>
 
 <style scoped>
-.sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 16px;
+/* Accent-filled row icon for this view's two favorite-item kinds (stop,
+   itinerary) - not a shared modules.css block, single consumer. */
+.row-icon--accent {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .section-title {
@@ -188,18 +190,6 @@ function openRoute(fav: FavoriteRoute) {
 
 .section-title-spaced {
   margin-top: 20px;
-}
-
-.fav-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-icon);
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
 }
 
 .fav-name {
@@ -215,18 +205,6 @@ function openRoute(fav: FavoriteRoute) {
 
 .fav-remove {
   color: var(--color-low-dot);
-  flex: none;
-}
-
-.route-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-icon);
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex: none;
 }
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/components/shared/PageHeader.vue'
 import SettingsButton from '@/components/shared/SettingsButton.vue'
@@ -11,6 +10,7 @@ import RowActionHint from '@/components/shared/RowActionHint.vue'
 import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useCityStore } from '@/stores/city'
+import { useNavigation } from '@/composables/useNavigation'
 import { useAgencies, lineKey } from '@/composables/useAgencies'
 import { haversineMeters } from '@/services/geo'
 import { track } from '@/composables/useAnalytics'
@@ -22,8 +22,8 @@ import type { Route } from '@/types'
 // MapLibre as soon as this view activates, even before the user taps the map toggle.
 const MiniMap = defineAsyncComponent(() => import('@/components/map/MiniMap.vue'))
 
-const router = useRouter()
 const { t } = useI18n()
+const { openStop, openLine } = useNavigation()
 const { routes, loading } = useRoutesList()
 const favorites = useFavoritesStore()
 const city = useCityStore()
@@ -162,7 +162,7 @@ function onRowClick(route: Route) {
   if (showMap.value) {
     highlightedLine.value = isHighlighted(route) ? null : route
   } else {
-    router.push({ name: 'line', params: { shortName: route.shortName } })
+    openLine(route.shortName)
   }
 }
 
@@ -198,7 +198,7 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
       <SettingsButton />
     </PageHeader>
 
-    <div class="segmented">
+    <div class="segmented segmented--inset">
       <button type="button" :class="{ active: !showMap }" @click="setTab(false)">
         {{ t('lines.tabList') }}
       </button>
@@ -270,24 +270,17 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
       :stop-id="mapSelectedStop.id"
       :stop-name="mapSelectedStop.name"
       @close="mapSelectedStop = null"
-      @view-stop="(id) => { mapSelectedStop = null; router.push({ name: 'stop', params: { stopId: id } }) }"
+      @view-stop="(id) => { mapSelectedStop = null; openStop(id) }"
       @select-line="selectLineFromPanel"
     />
   </div>
 </template>
 
 <style scoped>
+/* The tab bar must never shrink when map mode's flexible children fight
+   for vertical space. */
 .segmented {
   flex: none;
-  width: calc(100% - 32px);
-  max-width: var(--content-max-width);
-  margin: 0 auto 12px;
-}
-
-.segmented button {
-  flex: 1;
-  padding: 8px 10px;
-  text-align: center;
 }
 
 /* --- MAP MODE -------------------------------------------------------- */
@@ -335,13 +328,6 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
    color since the white gap separates badge from accent ring. */
 .badge-item--selected {
   box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent);
-}
-
-.sheet {
-  background-color: var(--color-sheet-bg);
-  padding: 8px 16px 16px;
-  flex: 1;
-  overflow-y: auto;
 }
 
 .line-name {
