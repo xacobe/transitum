@@ -23,9 +23,18 @@ const gtfsRoot = path.join(repoRoot, 'data', '.cache')
 
 // Cities come from the shared registry, same as the Python pipeline scripts
 // (pipeline/cities.py) - keeps this the single source of truth instead of a
-// second hardcoded list that silently drifts from config/cities.json.
-const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'config', 'cities.json'), 'utf-8'))
-const cities = (registry.cities ?? []).map((c) => ({ slug: c.slug, gtfs: `${c.slug}.gtfs.zip` }))
+// second hardcoded list that silently drifts from config/cities/. One file
+// per city, _countries.json excluded (it's the shared country registry,
+// not a city).
+const citiesDir = path.join(repoRoot, 'config', 'cities')
+const cities = fs.existsSync(citiesDir)
+  ? fs.readdirSync(citiesDir)
+      .filter((f) => f.endsWith('.json') && f !== '_countries.json')
+      .map((f) => {
+        const slug = f.slice(0, -'.json'.length)
+        return { slug, gtfs: `${slug}.gtfs.zip` }
+      })
+  : []
 
 const today = new Date()
 

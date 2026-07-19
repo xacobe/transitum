@@ -329,7 +329,7 @@ function formatMinutes(min) {
  * @param {import('minotor').Timetable} timetable
  * @param {import('minotor').StopsIndex} stopsIndex
  * @param {string} sourceStopId — the GTFS stop_id, *without* the app's
- *   `<feedId>:` prefix (strip it before calling — see cities.json's feedId).
+ *   `<feedId>:` prefix (strip it before calling — see the city config's feedId).
  * @param {string[]} shortNames
  * @param {number} afterMinutes
  * @param {number} [maxCount=3]

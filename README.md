@@ -417,6 +417,16 @@ Downloads the feed, remaps its `agency_id`(s) to the ones declared under `agenci
 
 Some feeds only cover a short rolling calendar window (check `calendar_dates.txt`'s date range after importing) — if so, plan to re-run `make import-gtfs` periodically to keep it current; there's no automated resync workflow for this path yet (unlike `data-sync-routes.yml` for the OSM path).
 
+### 4c. Several operators, no single combined feed (official GTFS, multi-source)
+
+Some cities split transit across separate operators that each publish their own feed — a bus company, a metro operator, a tram/rail operator — with no single portal combining them (Bilbao's Bilbobus/Metro Bilbao/Euskotren is the framework's own worked example). `import_gtfs.py` only takes one feed; for this case, declare a `transitSources` array (instead of a single `transitSource`) in the city's `config/cities/<slug>.json` — see `config/cities/example-city-b.example.jsonc`'s neighbor for the exact shape — then run:
+
+```bash
+python3 pipeline/import_gtfs_multi.py --city your-city
+```
+
+Each source's `agencyIds` map (`{"<agency_id in that feed>": "<declared agencyId>"}`) both renames and filters: any agency in the feed *not* listed as a key is dropped, along with everything that only belongs to it (routes, trips, stops, shapes, calendar) — useful when one source's feed bundles other cities/regions you don't want (Euskotren's single feed covers Bilbao's tram and funicular alongside an unrelated Gasteiz tram line and a wider regional train network). Every ID that could collide between sources (`route_id`, `trip_id`, `stop_id`, `shape_id`, ...) is prefixed per source before merging, so two operators reusing the same raw IDs never clash. Continue with step 4a's routes/stops/POIs/binaries commands as normal — the merged result lands in the same place a single-feed import would.
+
 ### 5. Generate vector map tiles
 
 Requires Java 17+. The first run downloads Planetiler (~150 MB, one-time):
@@ -456,7 +466,7 @@ with no `theme.css` just uses the defaults. See
 **Per-line colors** — each line's badge color resolves in this order: an
 explicit override in `config/line-colors.json` (see
 `config/line-colors.example.jsonc`), then the source GTFS's own official
-`route_color` if the city opted in (`cities.json`'s `useOfficialLineColors`),
+`route_color` if the city opted in (the city config's `useOfficialLineColors`),
 then a deterministic hash-based fallback palette so every line still gets a
 stable, distinct color with zero configuration. `make line-colors CITY=slug`
 seeds a starting entry per line (whatever color it shows today) into
@@ -464,7 +474,7 @@ seeds a starting entry per line (whatever color it shows today) into
 only ever fills in lines that don't have an entry yet, never touches what
 you've already changed. Framework code never writes to this file after the
 one-time seed, so it's yours to commit to your own `origin` like
-`config/cities.json`.
+`config/cities/`.
 
 **Adding behavior** (a new view, extra nav item, a different report/analytics
 backend, …) — copy `frontend/src/custom/index.example.ts` to

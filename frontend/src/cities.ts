@@ -27,7 +27,7 @@ interface LineColorOverride {
 
 const typedLineColors = lineColorsRegistry as unknown as Record<string, Record<string, LineColorOverride>>
 
-// Checked before both the official-GTFS color (cities.json's
+// Checked before both the official-GTFS color (the city config's
 // useOfficialLineColors) and the framework's hash-based fallback palette -
 // see useLineColor.ts. Keyed by shortName alone, not lineKey(agencyId,
 // shortName): every city this framework has shipped so far has exactly one

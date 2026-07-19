@@ -6,8 +6,9 @@ GTFS with actual timetables - far more complete than what osm_to_gtfs.py can
 rebuild from OSM route relation tagging alone.
 
 Downloads the zip, remaps its agency_id(s) to the city's declared
-agencyId(s) in cities.json (matched by order - the common case is a single
-urban operator, i.e. one agency on each side), and writes it to the same
+agencyId(s) in config/cities/<slug>.json (matched by order - the common
+case is a single urban operator, i.e. one agency on each side), and
+writes it to the same
 gtfs_dir()/gtfs_zip_path() locations osm_to_gtfs.py would, so the rest of
 the pipeline (gtfs_routes_to_json.py, gtfs_stops_to_json.py,
 generate-transit-data) works unchanged regardless of which script produced
@@ -17,18 +18,12 @@ Usage:
     python3 pipeline/import_gtfs.py --city vigo --url https://datos.vigo.org/data/transporte/gtfs_vigo.zip
 """
 import argparse
-import csv
 import io
 import urllib.request
 import zipfile
 
 from cities import get_city, gtfs_dir, gtfs_zip_path
-
-GTFS_FILES = [
-    "agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt",
-    "calendar.txt", "calendar_dates.txt", "shapes.txt", "fare_attributes.txt",
-    "fare_rules.txt", "frequencies.txt", "transfers.txt", "feed_info.txt",
-]
+from gtfs_io import GTFS_FILES, read_csv_rows, write_csv_rows
 
 
 def main():
@@ -58,17 +53,17 @@ def main():
     # Remap agency_id(s): the feed's own ids are provider-internal and
     # meaningless outside it (e.g. "1") - rewrite them to the city's
     # declared agencyId(s) so agency_id in routes.txt lines up with
-    # cities.json, the same convention osm_to_gtfs.py's synthetic feeds
-    # use everywhere else in this pipeline.
+    # config/cities/<slug>.json, the same convention osm_to_gtfs.py's
+    # synthetic feeds use everywhere else in this pipeline.
     agency_path = out_dir / "agency.txt"
-    with open(agency_path, encoding="utf-8-sig", newline="") as f:
-        agency_rows = list(csv.DictReader(f))
+    agency_rows = read_csv_rows(agency_path)
 
     if len(agency_rows) != len(city["agencies"]):
         raise SystemExit(
-            f"The feed has {len(agency_rows)} agency(ies) but cities.json declares "
+            f"The feed has {len(agency_rows)} agency(ies) but config/cities/{city['slug']}.json declares "
             f"{len(city['agencies'])} for '{city['slug']}' - map them by hand "
-            "(agency_id columns in agency.txt/routes.txt) before continuing with the rest of the pipeline."
+            "(agency_id columns in agency.txt/routes.txt) before continuing with the rest of the pipeline, "
+            "or see import_gtfs_multi.py if this city combines more than one operator's feed."
         )
 
     id_map = {row["agency_id"]: agency["agencyId"] for row, agency in zip(agency_rows, city["agencies"])}
@@ -80,23 +75,13 @@ def main():
         row["agency_url"] = agency["agencyUrl"]
         row["agency_timezone"] = agency["agencyTimezone"]
         row["agency_lang"] = agency["agencyLang"]
-
-    with open(agency_path, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=agency_rows[0].keys())
-        writer.writeheader()
-        writer.writerows(agency_rows)
+    write_csv_rows(agency_path, agency_rows)
 
     routes_path = out_dir / "routes.txt"
-    with open(routes_path, encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        fieldnames = reader.fieldnames
-        routes_rows = list(reader)
+    routes_rows = read_csv_rows(routes_path)
     for row in routes_rows:
         row["agency_id"] = id_map.get(row["agency_id"], row["agency_id"])
-    with open(routes_path, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(routes_rows)
+    write_csv_rows(routes_path, routes_rows)
 
     # Re-zip with the remapped agency_id so data/.cache/<slug>.gtfs.zip
     # (consumed by generate-transit-data) matches what's on disk in gtfs_dir().

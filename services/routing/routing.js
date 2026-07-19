@@ -33,7 +33,7 @@ export function loadCityData(slug, dataDir) {
   return { router, timetable, stopsIndex, routes }
 }
 
-// stopId here is the app's `<feedId>:<gtfs_stop_id>` form (see cities.json's
+// stopId here is the app's `<feedId>:<gtfs_stop_id>` form (see the city config's
 // feedId) — strip the prefix before handing off to Minotor, which indexes
 // stops by the raw GTFS stop_id.
 export function getStopDepartures(cityData, { stopId, lines, time, maxCount }) {

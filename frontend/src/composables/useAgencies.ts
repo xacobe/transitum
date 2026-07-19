@@ -3,11 +3,12 @@ import { useCityStore } from '@/stores/city'
 import type { Agency } from '@/types'
 
 /**
- * Agencies of the active city (cities.json's `agencies`, never a
- * hardcoded frontend constant). Today every city has exactly one, so
- * `hasMultipleAgencies` is always false and the company name/badge never
- * shows — it's meant to stay that way until a city's real data has more
- * than one operator.
+ * Agencies of the active city (the city config's `agencies`, never a
+ * hardcoded frontend constant). Most cities have exactly one, so
+ * `hasMultipleAgencies` is false and the company name/badge doesn't show
+ * for them - a multi-source city (several GTFS feeds merged by
+ * import_gtfs_multi.py, e.g. one operator per transport mode) is where it
+ * actually kicks in.
  */
 export function useAgencies() {
   const city = useCityStore()
@@ -30,7 +31,7 @@ export function lineKey(agencyId: string | null | undefined, shortName: string):
 
 /** OTP's `Agency.gtfsId` carries the feed prefix (e.g.
  * "citySlug:AGENCY_ID") — this strips it to the plain agencyId
- * (cities.json's `agencyId`) so OTP-derived data lines up with
+ * (the city config's `agencyId`) so OTP-derived data lines up with
  * routes.json-derived data. */
 export function agencyIdFromGtfsId(gtfsId: string | null | undefined): string | null {
   if (!gtfsId) return null

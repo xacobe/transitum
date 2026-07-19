@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+from cities import CITIES
 from overpass import area_filter, overpass_query
 
 ROOT = Path(__file__).parent.parent
@@ -49,23 +50,32 @@ def count_changed_relations(area_name: str, since_iso: str, admin_level: str | N
     return int(tags.get("relations", 0))
 
 
+def is_official_gtfs(city: dict) -> bool:
+    """True whether the city gets its transit data from one real feed
+    (transitSource, import_gtfs.py) or several merged into one
+    (transitSources, import_gtfs_multi.py) - either way it's not
+    OSM-synthetic, so this function's one caller treats them the same."""
+    if city.get("transitSource", {}).get("type") == "official-gtfs":
+        return True
+    return any(s.get("type") == "official-gtfs" for s in city.get("transitSources", []))
+
+
 def main() -> None:
-    with open(ROOT / "config" / "cities.json", encoding="utf-8") as f:
-        cities_data = json.load(f)["cities"]
     last_sync = load_last_sync()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     changed = []
-    for city in cities_data:
+    for city in CITIES.values():
         slug = city["slug"]
 
         # official-gtfs cities get their transit data from a real feed
-        # (pipeline/import_gtfs.py), not OSM reconstruction - queuing one
-        # here would have osm_to_gtfs.py silently overwrite the official
-        # feed with a synthetic one on the next sync run just because
-        # someone edited a bus relation in OSM. POIs still come from OSM
-        # either way, but that's osm_to_pois.py's job, not this check's.
-        if city.get("transitSource", {}).get("type") == "official-gtfs":
+        # (pipeline/import_gtfs.py or import_gtfs_multi.py), not OSM
+        # reconstruction - queuing one here would have osm_to_gtfs.py
+        # silently overwrite the official feed with a synthetic one on the
+        # next sync run just because someone edited a bus relation in OSM.
+        # POIs still come from OSM either way, but that's osm_to_pois.py's
+        # job, not this check's.
+        if is_official_gtfs(city):
             print(f"Skipping {slug} (official-gtfs city, not OSM-synthetic)")
             continue
 
