@@ -32,6 +32,26 @@ from cities import frontend_public_data_dir, gtfs_dir, parse_city_arg
 SHAPE_COORD_DECIMALS = 5
 
 
+# GTFS's numeric route_type (routes.txt), mapped to a stable semantic mode
+# string for the frontend to filter/label by. Every route has one -
+# osm_to_gtfs.py always writes "3" (bus, the only thing it reconstructs
+# from OSM route=bus relations); official-gtfs imports (import_gtfs.py,
+# import_gtfs_multi.py) carry through whatever the source feed declares
+# unchanged. Extended GTFS route types (100+, more granular real-world
+# subtypes) aren't mapped here - no feed this framework has imported uses
+# them yet, and falling back to "bus" for an unrecognized code is a safer
+# default than crashing on a city with a route type we haven't seen.
+GTFS_MODES = {
+    "0": "tram", "1": "metro", "2": "rail", "3": "bus", "4": "ferry",
+    "5": "cable_tram", "6": "aerial_lift", "7": "funicular",
+    "11": "trolleybus", "12": "monorail",
+}
+
+
+def gtfs_mode(route_type):
+    return GTFS_MODES.get((route_type or "").strip(), "bus")
+
+
 def normalize_hex_color(value):
     """GTFS route_color/route_text_color are 6 hex digits with no leading
     '#', and the field is optional - returns None for missing/malformed
@@ -298,10 +318,11 @@ def main():
                 "longName": long_name,
                 "agencyId": route["agency_id"],
                 "agencyName": agency_names.get(route["agency_id"], route["agency_id"]),
+                "mode": gtfs_mode(route.get("route_type")),
                 # Official color from the source GTFS, if any (osm_to_gtfs.py's
                 # synthetic feeds never set these - only official-gtfs imports
                 # do). Frontend decides whether to actually use it
-                # (cities.json's useOfficialLineColors, opt-in per city) -
+                # (the city config's useOfficialLineColors, opt-in per city) -
                 # kept here regardless so flipping that switch later needs
                 # no pipeline re-run.
                 "color": normalize_hex_color(route.get("route_color")),

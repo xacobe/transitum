@@ -128,11 +128,24 @@ export interface RouteDirection {
   hasFixedSchedule?: boolean
 }
 
+// Mirrors pipeline/gtfs_routes_to_json.py's GTFS_MODES - GTFS route_type
+// mapped to a stable string. Every route has one; unrecognized/extended
+// GTFS route_type codes fall back to 'bus' on the pipeline side rather
+// than being a distinct value here.
+export type TransitMode =
+  | 'tram' | 'metro' | 'rail' | 'bus' | 'ferry'
+  | 'cable_tram' | 'aerial_lift' | 'funicular' | 'trolleybus' | 'monorail'
+
 export interface Route {
   shortName: string
   longName: string
   agencyId: string
   agencyName: string
+  // Optional only for data generated before this field existed (same
+  // reasoning as RouteDirection.hasFixedSchedule) - treat missing as 'bus'
+  // at the call site, the pipeline's own fallback for an unrecognized
+  // GTFS route_type.
+  mode?: TransitMode
   // Official route_color/route_text_color from the source GTFS, if the feed
   // set them (osm_to_gtfs.py's synthetic feeds never do). Only actually
   // used for display when the active city opts in - see
