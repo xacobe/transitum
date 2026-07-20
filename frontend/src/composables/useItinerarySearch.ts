@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useItineraryPlan } from '@/composables/useRouting'
 import { useFrequency } from '@/composables/useFrequency'
 import { lineKey, agencyIdFromGtfsId } from '@/composables/useAgencies'
+import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { track } from '@/composables/useAnalytics'
 import { useCityStore } from '@/stores/city'
 import { formatTime } from '@/services/format'
@@ -51,6 +52,8 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
   const { itineraries, loading, error, isOffline, isNextAvailable, fetchPlan } = useItineraryPlan()
   const { goBack: navGoBack } = useNavigation()
   const cityStore = useCityStore()
+  const { availableModes, showFilter, isActive, toggle: toggleMode, transportModesParam } =
+    useTransitModeFilter()
 
   const sortMode = ref<'rapide' | 'tot'>('rapide')
   const selectedItinerary = ref<Itinerary | null>(null)
@@ -98,7 +101,7 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
   const activeItinerary = computed(() => selectedItinerary.value ?? sortedItineraries.value[0] ?? null)
 
   watch(
-    [fromLat, fromLon, toLat, toLon],
+    [fromLat, fromLon, toLat, toLon, transportModesParam],
     () => {
       selectedItinerary.value = null
       if (Number.isNaN(fromLat.value) || Number.isNaN(toLat.value)) return
@@ -109,6 +112,7 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
         fromLat: fromLat.value, fromLon: fromLon.value,
         toLat: toLat.value, toLon: toLon.value,
         time, fromName: fromName.value, toName: toName.value,
+        transportModes: transportModesParam.value,
       })
     },
     { immediate: true },
@@ -153,6 +157,7 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
     sortMode, selectedItinerary,
     fromLat, fromLon, toLat, toLon, fromName, toName,
     serviceOpen, uniqueItineraries, sortedItineraries, activeItinerary,
+    availableModes, showModeFilter: showFilter, isModeActive: isActive, toggleMode,
     goBack,
     swapOriginDestination,
     goEditOrigin: () => goEdit('origin'),

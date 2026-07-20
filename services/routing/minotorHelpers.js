@@ -19,6 +19,36 @@ export const RANGE_WINDOW_MIN     = 90
 // so the user can see that just walking is an option.
 export const WALK_ONLY_MAX_M      = 700
 
+// ── Transit mode filtering ──────────────────────────────────────────────────
+
+// Maps the app's TransitMode (frontend/src/types.ts, mirrors GTFS_MODES in
+// pipeline/gtfs_routes_to_json.py) to Minotor's RouteType enum. Every value
+// is the same word uppercased except metro, which Minotor calls SUBWAY.
+export const TRANSIT_MODE_TO_ROUTE_TYPE = {
+  tram: 'TRAM',
+  metro: 'SUBWAY',
+  rail: 'RAIL',
+  bus: 'BUS',
+  ferry: 'FERRY',
+  cable_tram: 'CABLE_TRAM',
+  aerial_lift: 'AERIAL_LIFT',
+  funicular: 'FUNICULAR',
+  trolleybus: 'TROLLEYBUS',
+  monorail: 'MONORAIL',
+}
+
+/**
+ * Converts a list of app TransitMode values into a Minotor `transportModes`
+ * Set, or null when the query should carry no restriction at all (Minotor's
+ * own default is "every mode" — see RangeQuery.Builder in either routing.js
+ * or useMinotorRouting.js, which only call .transportModes(...) when this
+ * returns non-null).
+ */
+export function routeTypesForModes(modes) {
+  if (!modes || !modes.length) return null
+  return new Set(modes.map((m) => TRANSIT_MODE_TO_ROUTE_TYPE[m]).filter(Boolean))
+}
+
 // ── Geometry ───────────────────────────────────────────────────────────────
 
 /** Approximate distance between two lat/lon points in metres. */
@@ -173,13 +203,53 @@ export function buildMapLegs(legs, fromLat, fromLon, toLat, toLon, originStop, d
 /**
  * Converts a Minotor Route object into an OTP-compatible itinerary object.
  * walkToMin / walkFromMin are in minutes; all times in the result are ms since epoch.
+ *
+ * @param {Array|null} routes — routes.json data, used to recover each vehicle
+ *   leg's agency (Minotor's own Route/ServiceRouteInfo carries no agency,
+ *   only a shortName + RouteType - see route.d.ts). Matched on shortName
+ *   *and* RouteType together, not shortName alone: two agencies can publish
+ *   the same shortName for unrelated lines (e.g. Madrid's EMT bus "1" and
+ *   Metro "1") and RouteType is the only other signal Minotor exposes to
+ *   tell them apart.
  */
 export function buildSyntheticItinerary(
-  route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName,
+  route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName, routes = null,
 ) {
   const midnight = new Date()
   midnight.setHours(0, 0, 0, 0)
   const toMs = mins => midnight.getTime() + mins * 60_000
+
+  // shortName alone doesn't always land on exactly one routes.json entry:
+  // a blank source route_short_name (Metro Bilbao's feed - one route for
+  // its whole network) or a city's lineOverrides (splitting that one route
+  // into rider-facing "L1"/"L2" entries, see config/cities/<slug>.json)
+  // both mean Minotor's raw leg.route.name can match zero or several
+  // routes.json entries of the same mode. Falls back to nearest-stop
+  // matching against the alighting stop in that case - the same signal
+  // getRouteShapeSegment already uses to line up a leg with its geometry.
+  function findRouteInfo(leg) {
+    const sameMode = routes?.filter(
+      r => TRANSIT_MODE_TO_ROUTE_TYPE[r.mode ?? 'bus'] === leg.route.type,
+    ) ?? []
+    const byName = sameMode.filter(r => r.shortName === leg.route.name)
+    if (byName.length === 1) return byName[0]
+
+    if (leg.to.lat == null) return byName[0] ?? null
+    const pool = byName.length > 1 ? byName : sameMode
+    let best = null, bestDist = Infinity
+    for (const r of pool) {
+      for (const dir of r.directions) {
+        for (const s of dir.stops) {
+          const d = haversineMeters(leg.to.lat, leg.to.lon, s.lat, s.lon)
+          if (d < bestDist) { bestDist = d; best = r }
+        }
+      }
+    }
+    // Coordinates from two different sources (Minotor's parsed stop vs.
+    // routes.json's) rarely land on the exact same float, but should be
+    // within a few metres for the same physical stop.
+    return bestDist <= 50 ? best : (byName[0] ?? null)
+  }
 
   const minotorLegs    = route.legs
   const firstVehicleLeg = minotorLegs.find(l => 'route' in l)
@@ -202,11 +272,19 @@ export function buildSyntheticItinerary(
   for (let i = 0; i < minotorLegs.length; i++) {
     const leg = minotorLegs[i]
     if ('route' in leg) {
+      const routeInfo = findRouteInfo(leg)
       legs.push({
         mode:      'BUS',
         duration:  (leg.arrivalTime - leg.departureTime) * 60,
-        route:     { shortName: leg.route.name },
-        agency:    { gtfsId: null, name: null },
+        // Prefer routes.json's shortName over Minotor's raw leg.route.name -
+        // they can diverge (a blank source route_short_name falls back to
+        // longName, or a city's lineOverrides relabels it entirely, see
+        // findRouteInfo's comment) and the display value should match what
+        // the Lines browser shows for the same route.
+        route:     { shortName: routeInfo?.shortName ?? leg.route.name },
+        // gtfsId has no feed-prefix here (agencyIdFromGtfsId only strips one
+        // if present, see its own comment) - the plain agencyId round-trips fine.
+        agency:    { gtfsId: routeInfo?.agencyId ?? null, name: routeInfo?.agencyName ?? null },
         startTime: toMs(leg.departureTime),
         endTime:   toMs(leg.arrivalTime),
         from:      { name: leg.from.name, lat: leg.from.lat ?? null, lon: leg.from.lon ?? null },

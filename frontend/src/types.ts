@@ -5,6 +5,12 @@ export interface Stop {
   name: string
   lat: number
   lon: number
+  // Every mode with a route passing through this stop, computed at pipeline
+  // time from routes.json (see gtfs_stops_to_json.py) - absent (not empty)
+  // when no route reaches it in the source data, or when the pipeline ran
+  // before this field was added. Treat missing as "bus" at the call site,
+  // same convention as Route.mode.
+  modes?: TransitMode[]
 }
 
 export type PoiType =
@@ -137,6 +143,16 @@ export type TransitMode =
   | 'cable_tram' | 'aerial_lift' | 'funicular' | 'trolleybus' | 'monorail'
 
 export interface Route {
+  // Unique across every route in the city, unlike (agencyId, shortName) -
+  // two distinct real-world routes can legitimately share a shortName
+  // within the same agency (seen on a region-wide bus merge: unrelated
+  // local operators independently reusing a short label like "E"). Optional
+  // only for data generated before this field existed - call sites that
+  // need a stable identity should fall back to
+  // `${agencyId}::${shortName}` (see useAgencies.ts's lineKey) for that
+  // older data, same as always, accepting the same-shortName collision risk
+  // it always had.
+  id?: string
   shortName: string
   longName: string
   agencyId: string
@@ -289,4 +305,8 @@ export interface RoutingParams {
   time: string
   fromName?: string | null
   toName?: string | null
+  // Restricts routing to these TransitMode values; null/omitted means every
+  // mode (see routeTypesForModes in services/routing/minotorHelpers.js,
+  // shared by both the offline and server routing paths).
+  transportModes?: TransitMode[] | null
 }

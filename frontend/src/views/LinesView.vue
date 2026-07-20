@@ -7,11 +7,13 @@ import ListRow from '@/components/shared/ListRow.vue'
 import LineBadge from '@/components/shared/LineBadge.vue'
 import MapStopPanel from '@/components/shared/MapStopPanel.vue'
 import RowActionHint from '@/components/shared/RowActionHint.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { useRoutesList } from '@/composables/useLocalRoutes'
+import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useCityStore } from '@/stores/city'
 import { useNavigation } from '@/composables/useNavigation'
-import { useAgencies, lineKey } from '@/composables/useAgencies'
+import { useAgencies, lineKey, routeIdentity } from '@/composables/useAgencies'
 import { haversineMeters } from '@/services/geo'
 import { track } from '@/composables/useAnalytics'
 import { IconStar, IconStarFilled, IconCurrentLocation, IconMap } from '@tabler/icons-vue'
@@ -28,6 +30,8 @@ const { routes, loading } = useRoutesList()
 const favorites = useFavoritesStore()
 const city = useCityStore()
 const { hasMultipleAgencies } = useAgencies()
+const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode, matchesFilter } =
+  useTransitModeFilter(routes)
 
 const showMap = ref(false)
 const highlightedLine = ref<Route | null>(null)
@@ -42,7 +46,10 @@ const locating = ref(false)
 // The map's own native GeolocateControl (triggered below) already frames
 // the user's position and draws its own "you are here" dot - this is just
 // the equivalent for the strip, which the control knows nothing about.
-const nearbyLineKeys = ref<Set<string> | null>(null)
+// Keyed by routeIdentity(), not lineKey() - two distinct routes can share
+// an (agencyId, shortName) pair (see Route.id's own comment), and lineKey
+// would then mark both "near" as soon as either one was.
+const nearbyRouteIds = ref<Set<string> | null>(null)
 
 function onGeolocate(pos: { lat: number; lon: number }) {
   locating.value = false
@@ -52,9 +59,9 @@ function onGeolocate(pos: { lat: number; lon: number }) {
     const isNear = route.directions.some((dir) =>
       dir.stops.some((stop) => haversineMeters(pos.lat, pos.lon, stop.lat, stop.lon) <= radius),
     )
-    if (isNear) nearby.add(lineKey(route.agencyId, route.shortName))
+    if (isNear) nearby.add(routeIdentity(route))
   }
-  nearbyLineKeys.value = nearby
+  nearbyRouteIds.value = nearby
   track('lines-near-me', { city: city.activeSlug, count: nearby.size })
 }
 
@@ -69,8 +76,8 @@ function onGeolocateError() {
 // triggerGeolocate) - this only starts that request and reacts to its
 // result via the geolocate/geolocate-error events below.
 function toggleNearby() {
-  if (nearbyLineKeys.value) {
-    nearbyLineKeys.value = null
+  if (nearbyRouteIds.value) {
+    nearbyRouteIds.value = null
     // Turns the control fully off (it's ACTIVE_LOCK at this point, since a
     // successful geolocate is what got us into "near me" mode) before our
     // own resetView() moves the camera away. Skipping this left the control
@@ -85,16 +92,16 @@ function toggleNearby() {
   }
 }
 
+const filteredRoutes = computed(() => routes.value.filter(matchesFilter))
+
 const stripRoutes = computed(() =>
-  nearbyLineKeys.value
-    ? routes.value.filter((r) => nearbyLineKeys.value!.has(lineKey(r.agencyId, r.shortName)))
-    : routes.value,
+  nearbyRouteIds.value
+    ? filteredRoutes.value.filter((r) => nearbyRouteIds.value!.has(routeIdentity(r)))
+    : filteredRoutes.value,
 )
 
 const highlightedKey = computed(() =>
-  highlightedLine.value
-    ? lineKey(highlightedLine.value.agencyId, highlightedLine.value.shortName)
-    : undefined,
+  highlightedLine.value ? routeIdentity(highlightedLine.value) : undefined,
 )
 
 // One destination variant per line is enough for an overview map with 40+
@@ -104,8 +111,8 @@ const highlightedKey = computed(() =>
 // exactly the useful detail a "where does this line actually go" click is
 // for, and it's only ever 1-6 extra polylines, not 40 lines' worth.
 const mapLegs = computed(() =>
-  routes.value.flatMap((route) => {
-    const key = lineKey(route.agencyId, route.shortName)
+  filteredRoutes.value.flatMap((route) => {
+    const key = routeIdentity(route)
     const dirs = key === highlightedKey.value ? route.directions : route.directions.slice(0, 1)
     return dirs.flatMap((dir, i) => {
       if (!dir.points || dir.points.length === 0) return []
@@ -124,7 +131,7 @@ const mapLegs = computed(() =>
 const highlightedStops = computed(() => {
   if (!highlightedLine.value) return []
   const route = routes.value.find(
-    (r) => lineKey(r.agencyId, r.shortName) === highlightedKey.value,
+    (r) => routeIdentity(r) === highlightedKey.value,
   )
   if (!route) return []
   // All variants' stops merged (deduped) - matches the dashed branches now
@@ -142,14 +149,14 @@ const highlightedStops = computed(() => {
 })
 
 function isHighlighted(route: Route): boolean {
-  return highlightedKey.value === lineKey(route.agencyId, route.shortName)
+  return highlightedKey.value === routeIdentity(route)
 }
 
 function setTab(map: boolean) {
   showMap.value = map
   if (!map) {
     highlightedLine.value = null
-    nearbyLineKeys.value = null
+    nearbyRouteIds.value = null
   } else {
     track('map-network-opened')
   }
@@ -207,20 +214,27 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
       </button>
     </div>
 
+    <ModeFilterBar
+      v-if="showModeFilter"
+      :modes="availableModes"
+      :is-active="isModeActive"
+      @toggle="toggleMode"
+    />
+
     <!-- FULLSCREEN MAP MODE -->
     <template v-if="showMap">
       <div class="map-wrap">
         <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
         <button type="button" class="btn btn--primary locate-btn" :disabled="locating" @click="toggleNearby">
-          <IconMap v-if="nearbyLineKeys" :size="18" />
+          <IconMap v-if="nearbyRouteIds" :size="18" />
           <IconCurrentLocation v-else :size="18" />
-          {{ locating ? t('common.loading') : (nearbyLineKeys ? t('lines.allMap') : t('lines.nearMe')) }}
+          {{ locating ? t('common.loading') : (nearbyRouteIds ? t('lines.allMap') : t('lines.nearMe')) }}
         </button>
       </div>
       <div class="badges-strip">
         <button
           v-for="route in stripRoutes"
-          :key="lineKey(route.agencyId, route.shortName)"
+          :key="routeIdentity(route)"
           type="button"
           class="badge-item"
           :class="{ 'badge-item--selected': isHighlighted(route) }"
@@ -237,8 +251,8 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
         <div class="content-inner">
           <p v-if="loading" class="status-text">{{ t('common.loading') }}</p>
           <ListRow
-            v-for="route in routes"
-            :key="lineKey(route.agencyId, route.shortName)"
+            v-for="route in filteredRoutes"
+            :key="routeIdentity(route)"
             tag="div"
             @click="onRowClick(route)"
           >

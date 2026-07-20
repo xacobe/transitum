@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useCityStore } from '@/stores/city'
-import type { Agency } from '@/types'
+import type { Agency, Route } from '@/types'
 
 /**
  * Agencies of the active city (the city config's `agencies`, never a
@@ -22,11 +22,26 @@ export function useAgencies() {
   return { agencies, hasMultipleAgencies, agencyFor }
 }
 
-/** Composite key used wherever a line's identity matters (Vue list keys,
- * dedup Maps/Sets, color hashing, favorites) — `shortName` alone isn't
- * unique once a city has more than one agency. */
+/** Composite key used for color hashing, favorites, and other contexts that
+ * only ever have a bare shortName + agencyId to work with (no full Route
+ * object) — an OTP-derived itinerary leg, a persisted favorite, and the
+ * like. `shortName` alone isn't unique once a city has more than one
+ * agency. NOT guaranteed globally unique even so — see routeIdentity()
+ * for when a full Route is available and true uniqueness matters (e.g. a
+ * Vue list :key or "is this the one that was clicked" tracking). */
 export function lineKey(agencyId: string | null | undefined, shortName: string): string {
   return `${agencyId ?? ''}::${shortName}`
+}
+
+/** True unique identity for a routes.json entry - prefer this over lineKey()
+ * whenever a full Route object is on hand. Falls back to lineKey() for data
+ * generated before Route.id existed, which carries the same
+ * same-shortName-within-one-agency collision risk lineKey() always had (see
+ * Route.id's own comment) - a real if rare case (a region-wide bus merge
+ * with independent local operators reusing a short label), not just a
+ * multi-agency one. */
+export function routeIdentity(route: Route): string {
+  return route.id ?? lineKey(route.agencyId, route.shortName)
 }
 
 /** OTP's `Agency.gtfsId` carries the feed prefix (e.g.

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import LineBadge from '@/components/shared/LineBadge.vue'
 import RouteHeader from '@/components/results/RouteHeader.vue'
 import ItineraryResultsList from '@/components/results/ItineraryResultsList.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { useItinerarySearch, busLinesOf } from '@/composables/useItinerarySearch'
 import { agencyIdFromGtfsId } from '@/composables/useAgencies'
 import { IconWalk, IconBus, IconMapPin, IconMap, type Icon } from '@tabler/icons-vue'
@@ -34,6 +35,10 @@ const {
   serviceOpen,
   sortedItineraries,
   activeItinerary,
+  availableModes,
+  showModeFilter,
+  isModeActive,
+  toggleMode,
   goBack,
   swapOriginDestination,
   goEditOrigin,
@@ -107,6 +112,12 @@ function viewOnMap() {
       @swap="swapOriginDestination"
       @edit-from="goEditOrigin"
       @edit-to="goEditDestination"
+    />
+    <ModeFilterBar
+      v-if="showModeFilter"
+      :modes="availableModes"
+      :is-active="isModeActive"
+      @toggle="toggleMode"
     />
     <div class="screen-content sheet pattern-tile-bg">
       <div class="content-inner">

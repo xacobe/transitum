@@ -51,17 +51,34 @@ export function useLineColor() {
     }
     if (officialColorsForSlug === city.activeSlug) return
     const routes = await loadCityRoutes(city.activeSlug)
-    const map = new Map<string, { bg: string; text: string }>()
+
+    const routesByAgency = new Map<string, typeof routes>()
     for (const route of routes) {
       if (!route.color) continue
-      map.set(lineKey(route.agencyId, route.shortName), {
-        bg: route.color,
-        // Computed, not route.textColor - real feeds set it unreliably
-        // (Vitrasa's is "000000" for every line regardless of how dark
-        // route_color is), so a declared value can't be trusted for
-        // contrast. See contrastingTextColor's own comment.
-        text: contrastingTextColor(route.color),
-      })
+      if (!routesByAgency.has(route.agencyId)) routesByAgency.set(route.agencyId, [])
+      routesByAgency.get(route.agencyId)!.push(route)
+    }
+
+    const map = new Map<string, { bg: string; text: string }>()
+    for (const agencyRoutes of routesByAgency.values()) {
+      // A single route_color shared by every one of an agency's routes isn't
+      // really per-line branding (e.g. EMT Madrid publishes the same
+      // corporate blue for all ~230 bus routes, while Metro Madrid's feed
+      // has a real distinct color per line) - falling back to the hash
+      // palette for that agency actually distinguishes its lines, instead
+      // of rendering every one of them identically.
+      const distinctColors = new Set(agencyRoutes.map((r) => r.color))
+      if (agencyRoutes.length > 1 && distinctColors.size === 1) continue
+      for (const route of agencyRoutes) {
+        map.set(lineKey(route.agencyId, route.shortName), {
+          bg: route.color!,
+          // Computed, not route.textColor - real feeds set it unreliably
+          // (Vitrasa's is "000000" for every line regardless of how dark
+          // route_color is), so a declared value can't be trusted for
+          // contrast. See contrastingTextColor's own comment.
+          text: contrastingTextColor(route.color!),
+        })
+      }
     }
     officialColors.value = map
     officialColorsForSlug = city.activeSlug

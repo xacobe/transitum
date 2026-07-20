@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import RouteHeader from '@/components/results/RouteHeader.vue'
 import MiniMap from '@/components/map/MiniMap.vue'
 import ItineraryResultsList from '@/components/results/ItineraryResultsList.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { useItinerarySearch, busLinesOf } from '@/composables/useItinerarySearch'
 import { track } from '@/composables/useAnalytics'
 import { useOfflineError } from '@/composables/useOfflineError'
@@ -34,6 +35,10 @@ const {
   uniqueItineraries,
   sortedItineraries,
   activeItinerary,
+  availableModes,
+  showModeFilter,
+  isModeActive,
+  toggleMode,
   goBack,
   swapOriginDestination,
   goEditOrigin,
@@ -120,6 +125,12 @@ function onPickDestination(pt: { lat: number; lon: number }) {
       @swap="swapOriginDestination"
       @edit-from="goEditOrigin"
       @edit-to="goEditDestination"
+    />
+    <ModeFilterBar
+      v-if="showModeFilter"
+      :modes="availableModes"
+      :is-active="isModeActive"
+      @toggle="toggleMode"
     />
     <div class="map-wrap">
       <MiniMap

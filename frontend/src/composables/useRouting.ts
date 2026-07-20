@@ -190,7 +190,7 @@ async function tryLocalRouting(params: RoutingParams, citySlug: string): Promise
     return findOfflineRoutes(
       offline.router, offline.stopsIndex,
       params.fromLat, params.fromLon, params.toLat, params.toLon,
-      params.time, routes, params.fromName, params.toName,
+      params.time, routes, params.fromName, params.toName, params.transportModes,
     ) as Itinerary[]
   } catch {
     return []

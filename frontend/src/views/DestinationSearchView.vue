@@ -2,7 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import SearchResultRow from '@/components/search/SearchResultRow.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { useDestinationSearchScreen } from '@/composables/useDestinationSearchScreen'
+import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { IconChevronLeft } from '@tabler/icons-vue'
 
 const { t } = useI18n()
@@ -13,6 +15,8 @@ const { results, loading, placeholder, query, inputEl, hasQuery, onInput, select
     homeRouteName: route.meta.homeRouteName as string,
     resultsRouteName: route.meta.resultsRouteName as string,
   })
+const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode } =
+  useTransitModeFilter()
 </script>
 
 <template>
@@ -32,6 +36,13 @@ const { results, loading, placeholder, query, inputEl, hasQuery, onInput, select
         />
       </div>
     </div>
+
+    <ModeFilterBar
+      v-if="showModeFilter"
+      :modes="availableModes"
+      :is-active="isModeActive"
+      @toggle="toggleMode"
+    />
 
     <div class="screen-content sheet pattern-tile-bg">
       <div class="content-inner">

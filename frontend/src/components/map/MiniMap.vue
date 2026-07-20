@@ -18,16 +18,24 @@ import { buildMapStyle } from '@/map/style'
 import { type LatLon, toLngLat, pointsToCoords, latLonArrayToBounds, cssVar } from '@/map/geometry'
 import { resolveTileUrl } from '@/map/tileSource'
 import { drawStopIcon } from '@/map/stopIcon'
+import { pickStopIconMode } from '@/services/modeIconSvg'
 import {
   pulsingDotElement, pinElement, solidDotElement, originFlagElement, busStopElement,
   pickMenuElement, injectMarkerStyles,
 } from '@/map/markerElements'
 import {
   ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, NEARBY_STOPS_SOURCE,
-  BUS_STOP_IMG, NEARBY_STOP_IMG,
+  NEARBY_STOP_IMG, stopIconImg,
   initOverlayLayers, registerOverlayHandlers,
 } from '@/map/overlayLayers'
-import type { MapLeg } from '@/types'
+import type { MapLeg, TransitMode } from '@/types'
+
+// Every TransitMode gets its own map sprite (see loadStopIcons/stopIconImg) -
+// listed once here since TransitMode itself is a type, not a runtime value.
+const ALL_TRANSIT_MODES: TransitMode[] = [
+  'tram', 'metro', 'rail', 'bus', 'ferry',
+  'cable_tram', 'aerial_lift', 'funicular', 'trolleybus', 'monorail',
+]
 
 type Anchor = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
@@ -37,7 +45,7 @@ const props = withDefaults(defineProps<{
   from?: [number, number]
   to?: [number, number]
   routeLegs?: MapLeg[]
-  stops?: { id?: string; name?: string; lat: number; lon: number }[]
+  stops?: { id?: string; name?: string; lat: number; lon: number; modes?: TransitMode[] }[]
   highlightedKey?: string
   /** Route mode: pulses/enlarges the matching stop from `stops` - e.g. the
    * one MapStopPanel is currently open for (LineView). Own lightweight
@@ -98,28 +106,30 @@ let activeTileUrl = ''
 const stopColor = () => cssVar('--color-stop-dot')
 
 // ── Overlay sprites ────────────────────────────────────────────────────────
-// The two bus-stop canvas sprites the symbol layers reference. Must be
-// registered before initOverlayLayers(); re-registered after setStyle()
-// which clears all custom images. Each uses a module-level promise to
-// prevent double-registration when 'load' and 'style.load' fire close
-// together on initial mount.
-let busIconPromise: Promise<void> | null = null
+// One canvas sprite per TransitMode, all the symbol layers reference some of
+// them. Must be registered before initOverlayLayers(); re-registered after
+// setStyle() which clears all custom images. A module-level promise prevents
+// double-registration when 'load' and 'style.load' fire close together on
+// initial mount.
+let stopIconsPromise: Promise<void> | null = null
 
-async function loadBusStopIcon() {
+async function loadStopIcons() {
   if (!map) return
-  if (map.hasImage(BUS_STOP_IMG)) return
-  if (busIconPromise) { await busIconPromise; return }
+  if (map.hasImage(stopIconImg('bus'))) return
+  if (stopIconsPromise) { await stopIconsPromise; return }
 
-  busIconPromise = (async () => {
+  stopIconsPromise = (async () => {
     // 2× canvas for crisp rendering on retina displays.
-    const imageData = await drawStopIcon(68, stopColor(), 4)  // logical 34px × 2
-    if (map && !map.hasImage(BUS_STOP_IMG)) {
-      map.addImage(BUS_STOP_IMG, imageData, { pixelRatio: 2 })
-    }
+    await Promise.all(ALL_TRANSIT_MODES.map(async (mode) => {
+      const imageData = await drawStopIcon(68, stopColor(), 4, mode)  // logical 34px × 2
+      if (map && !map.hasImage(stopIconImg(mode))) {
+        map.addImage(stopIconImg(mode), imageData, { pixelRatio: 2 })
+      }
+    }))
   })()
 
-  await busIconPromise
-  busIconPromise = null
+  await stopIconsPromise
+  stopIconsPromise = null
 }
 
 let nearbyIconPromise: Promise<void> | null = null
@@ -150,14 +160,20 @@ function setSourceData(sourceId: string, features: Feature[]) {
 }
 
 function toStopFeature(
-  s: { id?: string; name?: string; lat: number; lon: number },
+  s: { id?: string; name?: string; lat: number; lon: number; modes?: TransitMode[] },
   color: string,
   extra: Record<string, string | number> = {},
 ): Feature<Point> {
   return {
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
-    properties: { id: s.id ?? '', name: s.name ?? '', lat: s.lat, lon: s.lon, color, ...extra },
+    properties: {
+      id: s.id ?? '', name: s.name ?? '', lat: s.lat, lon: s.lon, color,
+      // Only STOPS_POINT_LAYER (search mode) actually reads 'icon' - harmless
+      // on the other sources' circle-type layers, which ignore it.
+      icon: stopIconImg(pickStopIconMode(s.modes)),
+      ...extra,
+    },
   }
 }
 
@@ -480,7 +496,7 @@ let overlayHandlersRegistered = false
 async function onStyleReady() {
   if (!map) return
   styleReady = true
-  await Promise.all([loadBusStopIcon(), loadNearbyStopIcon()])
+  await Promise.all([loadStopIcons(), loadNearbyStopIcon()])
   initOverlayLayers(map, stopColor())
   if (!overlayHandlersRegistered) {
     overlayHandlersRegistered = true

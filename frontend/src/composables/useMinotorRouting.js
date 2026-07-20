@@ -34,6 +34,7 @@ import {
   WALK_ONLY_MAX_M,
   MAX_TRANSFERS,
   RANGE_WINDOW_MIN,
+  routeTypesForModes,
 } from '@/services/minotorHelpers'
 
 /**
@@ -75,14 +76,17 @@ export function findOfflineDepartures(timetable, stopsIndex, stopId, shortNames,
  * @param {Array|null} routes — routes.json data for street-following geometry
  * @param {string|null} fromName — display name of origin
  * @param {string|null} toName  — display name of destination
+ * @param {string[]|null} transportModes — TransitMode values to restrict to, or
+ *   null/empty for every mode (see routeTypesForModes in minotorHelpers)
  */
 export function findOfflineRoutes(
   router, stopsIndex,
   fromLat, fromLon, toLat, toLon,
-  time, routes = null, fromName = null, toName = null,
+  time, routes = null, fromName = null, toName = null, transportModes = null,
 ) {
   const [h, m] = time.split(':').map(Number)
   const baseMinutes = h * 60 + m
+  const routeTypes = routeTypesForModes(transportModes)
 
   const directDistM = haversineMeters(fromLat, fromLon, toLat, toLon)
   const collected = []
@@ -106,15 +110,14 @@ export function findOfflineRoutes(
     const depMin = baseMinutes + walkToMin
 
     try {
-      const rangeResult = router.rangeRoute(
-        new RangeQuery.Builder()
-          .from(originStop.id)
-          .to(destStopIds)
-          .departureTime(depMin)
-          .lastDepartureTime(depMin + RANGE_WINDOW_MIN)
-          .maxTransfers(MAX_TRANSFERS)
-          .build(),
-      )
+      let queryBuilder = new RangeQuery.Builder()
+        .from(originStop.id)
+        .to(destStopIds)
+        .departureTime(depMin)
+        .lastDepartureTime(depMin + RANGE_WINDOW_MIN)
+        .maxTransfers(MAX_TRANSFERS)
+      if (routeTypes) queryBuilder = queryBuilder.transportModes(routeTypes)
+      const rangeResult = router.rangeRoute(queryBuilder.build())
 
       for (const route of rangeResult.getRoutes()) {
         const lastVehicleLeg = [...route.legs].reverse().find(l => 'route' in l)
@@ -125,7 +128,7 @@ export function findOfflineRoutes(
 
         collected.push({
           ...buildSyntheticItinerary(
-            route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName,
+            route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName, routes,
           ),
           mapLegs: buildMapLegs(
             route.legs, fromLat, fromLon, toLat, toLon, originStop, matchedDest, routes,

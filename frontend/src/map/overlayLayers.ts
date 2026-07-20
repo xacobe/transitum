@@ -14,6 +14,7 @@
  */
 import type { Map as MapLibreMap, GeoJSONSource, MapMouseEvent, MapGeoJSONFeature } from 'maplibre-gl'
 import type { Point } from 'geojson'
+import type { TransitMode } from '@/types'
 
 export const ROUTE_SOURCE  = 'mm-routes'
 const ROUTE_BUS_ID  = 'mm-routes-bus'
@@ -35,9 +36,15 @@ const STOPS_POINT_LAYER    = 'mm-stops-point'
 export const NEARBY_STOPS_SOURCE = 'mm-nearby-stops'
 const NEARBY_STOPS_LAYER  = 'mm-nearby-stops-icon'
 
-// Named canvas sprites (registered in MiniMap via drawStopIcon + addImage)
-export const BUS_STOP_IMG    = 'bus-stop-icon'
+// Named canvas sprites (registered in MiniMap via drawStopIcon + addImage).
+// One per TransitMode for the main "all city stops" sprite, so a metro/tram/
+// etc stop shows its own icon instead of a generic bus one - see
+// stopIconImg()/loadStopIcons() in MiniMap.vue.
 export const NEARBY_STOP_IMG = 'nearby-stop-icon'
+
+export function stopIconImg(mode: TransitMode): string {
+  return `stop-icon-${mode}`
+}
 
 export interface StopClickPayload { id: string; name: string; lat: number; lon: number }
 
@@ -189,9 +196,11 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     paint: { 'text-color': '#fff' },
   })
 
-  // Individual (unclustered) stops — bus-stop icon symbol, visible from zoom 13.
-  // The icon is a pre-rendered canvas sprite (blue circle + white SVG icon)
-  // registered before this function is called.
+  // Individual (unclustered) stops — mode-appropriate icon symbol, visible
+  // from zoom 13. Icons are pre-rendered canvas sprites (colored circle +
+  // white SVG icon), one per TransitMode, registered before this function is
+  // called; 'icon' is set per-feature in toStopFeature() from the stop's own
+  // modes (see stopIconImg()).
   map.addLayer({
     id: STOPS_POINT_LAYER,
     type: 'symbol',
@@ -199,7 +208,7 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     minzoom: 13,
     filter: ['!', ['has', 'point_count']],
     layout: {
-      'icon-image': BUS_STOP_IMG,
+      'icon-image': ['get', 'icon'],
       'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 0.75],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,

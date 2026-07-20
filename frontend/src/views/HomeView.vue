@@ -9,11 +9,13 @@ import MiniMap from '@/components/map/MiniMap.vue'
 import LogoPill from '@/components/home/LogoPill.vue'
 import SearchCard from '@/components/shared/SearchCard.vue'
 import StopPreviewCard from '@/components/home/StopPreviewCard.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { IconMapPinOff } from '@tabler/icons-vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
 import { useAllCityStops } from '@/composables/useAllCityStops'
 import { useOriginLocation } from '@/composables/useOriginLocation'
 import { useNavigation } from '@/composables/useNavigation'
+import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { useCityStore } from '@/stores/city'
 import type { Stop } from '@/types'
 
@@ -41,6 +43,10 @@ const { origin, geoErrorCode, setOrigin, goSearchOrigin, goSearchDestination } =
   searchRouteName: 'search',
   onOriginSet: (lat, lon) => fetchNearby(lat, lon),
 })
+const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode, matchesStopFilter } =
+  useTransitModeFilter()
+
+const filteredStops = computed(() => allStops.value.filter(matchesStopFilter))
 
 // Show notification when the initial geolocation on mount fails with PERMISSION_DENIED
 watch(geoErrorCode, (code) => {
@@ -124,11 +130,14 @@ function onMapGeolocateError({ code }: { code: number }) {
   <div class="screen">
     <div class="map-zone">
       <!-- --map-ctrl-top-extra clears the top-bar (logo + settings button) -->
-      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="allStops" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
+      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
       <div class="top-bar">
         <div class="top-bar-spacer" aria-hidden="true" />
         <LogoPill />
         <SettingsButton class="settings-btn-corner" />
+      </div>
+      <div v-if="showModeFilter" class="mode-filter-overlay">
+        <ModeFilterBar :modes="availableModes" :is-active="isModeActive" @toggle="toggleMode" />
       </div>
       <div v-if="locationDenied" class="location-denied" role="alert">
         <IconMapPinOff :size="14" aria-hidden="true" />
@@ -198,6 +207,24 @@ function onMapGeolocateError({ code }: { code: number }) {
 }
 
 .settings-btn-corner {
+  box-shadow: var(--shadow-card);
+}
+
+/* Below .top-bar (logo + settings), same anchor the MapLibre controls
+   below use - see the :deep(.maplibregl-ctrl-top-right) rule. */
+.mode-filter-overlay {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+}
+
+.mode-filter-overlay :deep(.mode-filter-bar) {
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
   box-shadow: var(--shadow-card);
 }
 

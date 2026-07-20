@@ -79,7 +79,7 @@ const server = createServer(async (req, res) => {
       return
     }
 
-    const { fromLat, fromLon, toLat, toLon, time, citySlug, fromName, toName, numItineraries } =
+    const { fromLat, fromLon, toLat, toLon, time, citySlug, fromName, toName, numItineraries, transportModes } =
       body
     const cityData = cities.get(citySlug)
     if (!cityData) {
@@ -106,6 +106,7 @@ const server = createServer(async (req, res) => {
         fromName: fromName ?? null,
         toName: toName ?? null,
         numItineraries: Math.min(Math.max(1, Number(numItineraries ?? 5)), 10),
+        transportModes: Array.isArray(transportModes) ? transportModes : null,
       })
       res.end(JSON.stringify({ itineraries }))
     } catch (err) {

@@ -7,11 +7,13 @@ import SettingsButton from '@/components/shared/SettingsButton.vue'
 import ListRow from '@/components/shared/ListRow.vue'
 import SearchCard from '@/components/shared/SearchCard.vue'
 import StopOriginModal from '@/components/list/StopOriginModal.vue'
+import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
 import { useNavigation } from '@/composables/useNavigation'
 import { useOriginLocation } from '@/composables/useOriginLocation'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { useCityStore } from '@/stores/city'
 import { IconBusStop, IconDownload, IconRefresh } from '@tabler/icons-vue'
 import LineBadge from '@/components/shared/LineBadge.vue'
@@ -32,6 +34,8 @@ const { openStop: openStopView } = useNavigation()
 const city = useCityStore()
 const { isDownloaded, isUpdateAvailable } = useOfflineTiles()
 const { isOnline } = useOnlineStatus()
+const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode } =
+  useTransitModeFilter()
 
 const showOfflineHint = computed(() =>
   isOnline.value && !isDownloaded(city.activeSlug)
@@ -89,6 +93,13 @@ function goStopDetails() {
     <PageHeader :eyebrow="t('list.eyebrow')" :title="t('nav.list')">
       <SettingsButton />
     </PageHeader>
+
+    <ModeFilterBar
+      v-if="showModeFilter"
+      :modes="availableModes"
+      :is-active="isModeActive"
+      @toggle="toggleMode"
+    />
 
     <div class="body">
       <div class="screen-content sheet sheet--flex pattern-tile-bg">

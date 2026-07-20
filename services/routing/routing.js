@@ -14,6 +14,7 @@ import {
   WALK_ONLY_MAX_M,
   MAX_TRANSFERS,
   RANGE_WINDOW_MIN,
+  routeTypesForModes,
 } from './minotorHelpers.js'
 
 export function loadCityData(slug, dataDir) {
@@ -46,12 +47,13 @@ export function getStopDepartures(cityData, { stopId, lines, time, maxCount }) {
 
 export function planRoute(
   cityData,
-  { fromLat, fromLon, toLat, toLon, time, fromName, toName, numItineraries = 5 },
+  { fromLat, fromLon, toLat, toLon, time, fromName, toName, numItineraries = 5, transportModes = null },
 ) {
   const { router, stopsIndex, routes } = cityData
 
   const [h, m] = time.split(':').map(Number)
   const baseMinutes = h * 60 + m
+  const routeTypes = routeTypesForModes(transportModes)
 
   const directDistM = haversineMeters(fromLat, fromLon, toLat, toLon)
   const collected = []
@@ -77,15 +79,14 @@ export function planRoute(
     const depMin = baseMinutes + walkToMin
 
     try {
-      const rangeResult = router.rangeRoute(
-        new RangeQuery.Builder()
-          .from(originStop.id)
-          .to(destStopIds)
-          .departureTime(depMin)
-          .lastDepartureTime(depMin + RANGE_WINDOW_MIN)
-          .maxTransfers(MAX_TRANSFERS)
-          .build(),
-      )
+      let queryBuilder = new RangeQuery.Builder()
+        .from(originStop.id)
+        .to(destStopIds)
+        .departureTime(depMin)
+        .lastDepartureTime(depMin + RANGE_WINDOW_MIN)
+        .maxTransfers(MAX_TRANSFERS)
+      if (routeTypes) queryBuilder = queryBuilder.transportModes(routeTypes)
+      const rangeResult = router.rangeRoute(queryBuilder.build())
 
       for (const route of rangeResult.getRoutes()) {
         const lastVehicleLeg = [...route.legs].reverse().find(l => 'route' in l)
@@ -96,7 +97,7 @@ export function planRoute(
 
         collected.push({
           ...buildSyntheticItinerary(
-            route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName,
+            route, walkToMin, walkFromMin, fromLat, fromLon, toLat, toLon, fromName, toName, routes,
           ),
           mapLegs: buildMapLegs(
             route.legs, fromLat, fromLon, toLat, toLon, originStop, matchedDest, routes,

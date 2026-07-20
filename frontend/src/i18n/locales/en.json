@@ -90,6 +90,18 @@
     "nearMe": "Near me",
     "allMap": "View whole map"
   },
+  "modes": {
+    "tram": "Tram",
+    "metro": "Metro",
+    "rail": "Rail",
+    "bus": "Bus",
+    "ferry": "Ferry",
+    "cable_tram": "Cable tram",
+    "aerial_lift": "Cable car",
+    "funicular": "Funicular",
+    "trolleybus": "Trolleybus",
+    "monorail": "Monorail"
+  },
   "list": {
     "eyebrow": "NO MAP",
     "nearbyStops": "Nearby stops",
