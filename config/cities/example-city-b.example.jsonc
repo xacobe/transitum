@@ -79,6 +79,25 @@
   // gtfs_routes_to_json.py expects the key to exist. Leave empty.
   "operatorAliases": {},
 
+  // Optional, omit unless you need it: splits one GTFS route into several
+  // rider-facing lines, keyed by agencyId then by the exact trip_headsign
+  // to relabel. For a feed that models an interlined network as a single
+  // route (no clean per-line route_id in the source data) but where riders
+  // still know it as separate numbered lines — Metro Bilbao's feed is the
+  // framework's own case: one route for the whole network, "L1"/"L2" only
+  // exist as a label riders apply to specific destinations, not in the
+  // data. A headsign left out of the map keeps the route's own
+  // shortName/longName instead of being dropped, so this never has to be
+  // exhaustive. See docs/cities/line-overrides.md for how the Bilbao
+  // mapping was derived from the feed's own shape_id naming (not guessed
+  // from a line diagram).
+  // "lineOverrides": {
+  //   "METRO": {
+  //     "Plentzia":       { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+  //     "Basauri":        { "shortName": "L2", "longName": "Basauri - Kabiezes" }
+  //   }
+  // },
+
   "schedule": {
     // only used as a routing fallback; irrelevant here since real GTFS
     // trip times already encode actual travel time

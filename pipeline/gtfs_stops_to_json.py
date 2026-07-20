@@ -9,6 +9,7 @@ Stop View (real schedules/frequency) and for the destination search by name.
 """
 import csv
 import json
+from collections import defaultdict
 
 from cities import frontend_public_data_dir, gtfs_dir, parse_city_arg
 
@@ -18,23 +19,50 @@ from cities import frontend_public_data_dir, gtfs_dir, parse_city_arg
 # View with an id from this JSON would fail (stop(id) returns null).
 
 
+def modes_by_stop_id(routes_path) -> dict[str, set[str]]:
+    """Cross-references the already-generated routes.json (gtfs_routes_to_json.py
+    runs first in the pipeline, see Makefile's data-common target) to know
+    which transit mode(s) serve each stop - so the map can show a
+    metro/tram/etc icon per stop instead of a generic bus-stop one for every
+    city, without re-deriving route_type from the raw GTFS a second time.
+    Best-effort: a missing routes.json just means no stop gets a "modes"
+    field, which the frontend already treats the same as an empty one."""
+    result: dict[str, set[str]] = defaultdict(set)
+    try:
+        with open(routes_path, encoding="utf-8") as f:
+            routes = json.load(f)
+    except FileNotFoundError:
+        return result
+    for route in routes:
+        mode = route.get("mode", "bus")
+        for direction in route.get("directions", []):
+            for stop in direction.get("stops", []):
+                result[stop["id"]].add(mode)
+    return result
+
+
 def main():
     city = parse_city_arg(__doc__)
     feed_id_prefix = f"{city['feedId']}:"
     stops_txt = gtfs_dir(city["slug"]) / "stops.txt"
     output_path = frontend_public_data_dir(city["slug"]) / "stops.json"
 
+    stop_modes = modes_by_stop_id(output_path.parent / "routes.json")
+
     stops = []
     with open(stops_txt, encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            stops.append(
-                {
-                    "id": f"{feed_id_prefix}{row['stop_id']}",
-                    "name": row["stop_name"],
-                    "lat": float(row["stop_lat"]),
-                    "lon": float(row["stop_lon"]),
-                }
-            )
+            stop_id = f"{feed_id_prefix}{row['stop_id']}"
+            entry = {
+                "id": stop_id,
+                "name": row["stop_name"],
+                "lat": float(row["stop_lat"]),
+                "lon": float(row["stop_lon"]),
+            }
+            modes = stop_modes.get(stop_id)
+            if modes:
+                entry["modes"] = sorted(modes)
+            stops.append(entry)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:

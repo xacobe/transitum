@@ -9,11 +9,14 @@ routing binaries (timetable.bin + stops.bin) from that GTFS - so the app,
 including offline/online route planning, runs immediately after `make dev`.
 No network calls needed (no OSM, no live GTFS feed).
 
-Map tiles are the one thing NOT generated here - `make tiles CITY=<slug>`
-needs Java or Docker plus a country-level OSM PBF (100MB-1GB+ depending on
+Map tiles are usually NOT generated here - `make tiles CITY=<slug>` needs
+Java or Docker plus a country-level OSM PBF (100MB-1GB+ depending on
 country, downloaded once and cached), too heavy for a "try it in 30 seconds"
-path. Without it the map falls back to no basemap; run `make tiles` after if
-you want the visual map, not just stops/routes/search.
+path, so most examples don't ship a tiles.pmtiles and the map falls back to
+no basemap until you run `make tiles` separately. An example can still
+commit one anyway (see examples/spain/cities/bilbao/) when showing the
+whole app working, tiles included, matters more than keeping the example
+small - it's a snapshot either way, same as the GTFS it ships.
 
 Refuses to add a city whose config/cities/<slug>.json already exists -
 re-running this (or `make add-city`) for the same example is a no-op error,
@@ -118,37 +121,65 @@ def main() -> None:
     print(f"✓ Added {', '.join(sorted(added_slugs))} to config/cities/", file=sys.stderr)
 
     zipped_slugs = []
+    tiled_slugs = []
     for city in city_entries:
         slug, country = city["slug"], city["country"]
-        gtfs_src = None
-        for kind, dest in (
-            ("gtfs", DATA_DIR / "gtfs" / country / slug),
-            ("cities", DATA_DIR / "cities" / slug),
-        ):
-            src = example_dir / kind / slug
-            if not src.exists():
-                print(f"  ! no {kind}/{slug} in {example_dir} - skipping data copy", file=sys.stderr)
-                continue
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src, dest, dirs_exist_ok=True)
-            print(f"✓ Copied {kind}/{slug} → {dest.relative_to(ROOT)}", file=sys.stderr)
-            if kind == "gtfs":
-                gtfs_src = src
 
-        if gtfs_src is not None:
-            zip_gtfs(gtfs_src, CACHE_DIR / f"{slug}.gtfs.zip")
+        # GTFS source comes in one of two committed forms: loose .txt files
+        # under gtfs/<slug>/ (the Burkina Faso cities - small enough that
+        # plain text stays inspectable on GitHub), or a single
+        # gtfs/<slug>.zip (Bilbao - a multi-operator merge whose stop_times.txt
+        # alone is ~50MB as loose text; GTFS CSV compresses to roughly an
+        # eighth of that, so zipping it is the difference between a
+        # reasonable example and a genuinely heavy one). The zip form skips
+        # populating data/gtfs/<country>/<slug>/ entirely - that directory
+        # is a convenience mirror for inspecting the raw feed locally,
+        # never actually read by anything (generate_transit_data.mjs only
+        # ever reads data/.cache/<slug>.gtfs.zip, see gtfs_zip_path()) - so
+        # there's nothing to reconstruct it from besides unzipping by hand.
+        gtfs_zip_src = example_dir / "gtfs" / f"{slug}.zip"
+        gtfs_dir_src = example_dir / "gtfs" / slug
+        if gtfs_zip_src.exists():
+            dest = CACHE_DIR / f"{slug}.gtfs.zip"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(gtfs_zip_src, dest)
+            print(f"✓ Copied gtfs/{slug}.zip → {dest.relative_to(ROOT)}", file=sys.stderr)
             zipped_slugs.append(slug)
+        elif gtfs_dir_src.exists():
+            dest = DATA_DIR / "gtfs" / country / slug
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(gtfs_dir_src, dest, dirs_exist_ok=True)
+            print(f"✓ Copied gtfs/{slug} → {dest.relative_to(ROOT)}", file=sys.stderr)
+            zip_gtfs(gtfs_dir_src, CACHE_DIR / f"{slug}.gtfs.zip")
+            zipped_slugs.append(slug)
+        else:
+            print(f"  ! no gtfs/{slug}(.zip) in {example_dir} - skipping data copy", file=sys.stderr)
+
+        cities_src = example_dir / "cities" / slug
+        if cities_src.exists():
+            dest = DATA_DIR / "cities" / slug
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(cities_src, dest, dirs_exist_ok=True)
+            print(f"✓ Copied cities/{slug} → {dest.relative_to(ROOT)}", file=sys.stderr)
+            if (cities_src / "tiles.pmtiles").exists():
+                tiled_slugs.append(slug)
+        else:
+            print(f"  ! no cities/{slug} in {example_dir} - skipping data copy", file=sys.stderr)
 
     if zipped_slugs:
         generate_routing_binaries(zipped_slugs)
 
     print("", file=sys.stderr)
     print(f"Ready: make dev", file=sys.stderr)
-    print(
-        "(Map tiles not included - run `make tiles CITY=<slug>` for the visual "
-        "basemap; needs Java or Docker plus a one-time country PBF download.)",
-        file=sys.stderr,
-    )
+    untiled_slugs = sorted(added_slugs - set(tiled_slugs))
+    if tiled_slugs:
+        print(f"Map tiles included for: {', '.join(sorted(tiled_slugs))}", file=sys.stderr)
+    if untiled_slugs:
+        print(
+            f"No map tiles for: {', '.join(untiled_slugs)} - run `make tiles CITY=<slug>` "
+            "for the visual basemap; needs Java or Docker plus a one-time OSM PBF download.",
+            file=sys.stderr,
+        )
 
 
 def zip_gtfs(gtfs_dir: Path, dest: Path) -> None:

@@ -167,6 +167,7 @@ def main():
     # any route ended up unattributed and wasn't curated away yet.
     agency_names = {a["agencyId"]: a["agencyName"] for a in city["agencies"]}
     agency_names.setdefault(city["defaultAgencyId"], "Operador desconocido")
+    line_overrides_by_agency = city.get("lineOverrides", {})
 
     with open(gtfs_path / "trips.txt", encoding="utf-8") as f:
         trips = list(csv.DictReader(f))
@@ -206,7 +207,12 @@ def main():
 
     routes_out = []
     for route in routes:
-        this_short_name = route["route_short_name"]
+        # Some official feeds (e.g. Metro Bilbao's, which models its whole
+        # network as one GTFS route) leave route_short_name blank - GTFS
+        # only requires one of short/long name to be set. Falling back to
+        # route_long_name keeps the badge non-empty instead of a blank pill;
+        # LineBadge truncates long text with an ellipsis for this case.
+        this_short_name = route["route_short_name"] or route["route_long_name"]
 
         # This route's destination variants, most-used first within each
         # direction_id (so the busiest branch is the default-selected chip
@@ -312,10 +318,19 @@ def main():
             if first_dir_stops:
                 long_name = f"{first_dir_stops[0]['name']} - {first_dir_stops[-1]['name']}"
 
-        routes_out.append(
-            {
-                "shortName": this_short_name,
-                "longName": long_name,
+        def make_route_entry(entry_id, short_name, this_long_name, these_directions):
+            return {
+                # Unique across every entry in the output, unlike
+                # (agencyId, shortName) - two distinct real-world routes can
+                # legitimately share a shortName within the same agency (a
+                # region-wide bus merge is the observed case: unrelated local
+                # operators independently reusing a short label like "E").
+                # The frontend uses this, not (agencyId, shortName), wherever
+                # it needs to tell two routes.json entries apart - see
+                # LinesView.vue's highlightedLine tracking.
+                "id": entry_id,
+                "shortName": short_name,
+                "longName": this_long_name,
                 "agencyId": route["agency_id"],
                 "agencyName": agency_names.get(route["agency_id"], route["agency_id"]),
                 "mode": gtfs_mode(route.get("route_type")),
@@ -327,8 +342,41 @@ def main():
                 # no pipeline re-run.
                 "color": normalize_hex_color(route.get("route_color")),
                 "textColor": normalize_hex_color(route.get("route_text_color")),
-                "directions": directions,
+                "directions": these_directions,
             }
+
+        # Optional per-city override (lineOverrides in config/cities/<slug>.json,
+        # keyed by agencyId then by exact trip_headsign) - splits a single GTFS
+        # route into the separately-numbered lines riders actually know, for a
+        # feed that models an interlined network as one route (Metro Bilbao's
+        # feed has one route_id for its whole network; L1/L2 only exist as a
+        # label riders apply to the headsigns, not in the data - see
+        # docs/cities/line-overrides.md).
+        # A headsign not listed keeps the route's own shortName/longName in a
+        # fallback entry, so an override never has to be exhaustive to be safe.
+        agency_overrides = line_overrides_by_agency.get(route["agency_id"])
+        if agency_overrides:
+            grouped = defaultdict(list)
+            fallback_directions = []
+            for d in directions:
+                override = agency_overrides.get(d["headsign"])
+                if override:
+                    grouped[(override["shortName"], override.get("longName", long_name))].append(d)
+                else:
+                    fallback_directions.append(d)
+            for (label_short, label_long), group_directions in grouped.items():
+                # label_short (not route["route_id"] alone) disambiguates the
+                # split siblings, which all share one underlying route_id.
+                entry_id = f"{route['route_id']}::{label_short}"
+                routes_out.append(make_route_entry(entry_id, label_short, label_long, group_directions))
+            if fallback_directions:
+                routes_out.append(
+                    make_route_entry(route["route_id"], this_short_name, long_name, fallback_directions)
+                )
+            continue
+
+        routes_out.append(
+            make_route_entry(route["route_id"], this_short_name, long_name, directions)
         )
 
     routes_out.sort(key=lambda r: natural_sort_key(r["shortName"]))

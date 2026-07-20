@@ -219,7 +219,22 @@ def main() -> None:
         "--docker", action="store_true",
         help="run via Docker instead of local Java (no Java install required)",
     )
+    parser.add_argument(
+        "--osm-path",
+        help=(
+            "Use this local .osm.pbf instead of downloading the country-level one. "
+            "For a large country, a smaller regional/state extract (e.g. from "
+            "Geofabrik's per-region downloads, when the country offers them) covers "
+            "the same city bounds in a fraction of the time - Planetiler still reads "
+            "the whole input file even though --bounds only affects the output. "
+            "Requires the city argument (a regional file rarely covers every "
+            "configured city's country)."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.osm_path and not args.city:
+        sys.exit("--osm-path requires a city argument, e.g. generate_pmtiles.py your-city --osm-path ...")
 
     if args.city:
         if args.city not in CITIES:
@@ -241,13 +256,18 @@ def main() -> None:
     seen_countries: set[str] = set()
     ok = True
     for city in cities:
-        country_slug  = city["country"]
-        pbf_path      = CACHE_DIR / f"{country_slug}-latest.osm.pbf"
-        geofabrik_url = COUNTRIES.get(country_slug, {}).get("geofabrikUrl")
+        if args.osm_path:
+            pbf_path = Path(args.osm_path)
+            if not pbf_path.exists():
+                sys.exit(f"--osm-path file not found: {pbf_path}")
+        else:
+            country_slug  = city["country"]
+            pbf_path      = CACHE_DIR / f"{country_slug}-latest.osm.pbf"
+            geofabrik_url = COUNTRIES.get(country_slug, {}).get("geofabrikUrl")
 
-        if country_slug not in seen_countries:
-            ensure_osm_pbf(pbf_path, geofabrik_url, country_slug)
-            seen_countries.add(country_slug)
+            if country_slug not in seen_countries:
+                ensure_osm_pbf(pbf_path, geofabrik_url, country_slug)
+                seen_countries.add(country_slug)
 
         if not runner(city, pbf_path):
             ok = False
