@@ -1,44 +1,70 @@
-# Example: Spain — Vigo (official-GTFS pattern)
+# Example: Spain — Bilbao (official-GTFS pattern, multi-source)
 
 A real, working example of the **official-gtfs** transit-data pattern (see
-`config/cities/example-city-b.example.jsonc`): the operator (Vitrasa, Vigo's urban bus
-network) publishes a real GTFS feed with actual timetables, imported as-is
-via `pipeline/import_gtfs.py` instead of reconstructed from OSM tagging.
-Single city, single country - a smaller, simpler example than
-`examples/burkina-faso/`'s multi-city one, and a demonstration of real
-scheduled service (59 lines, 1156 stops, real departure times) rather than
-a frequency estimate.
+`config/cities/example-city-b.example.jsonc`), and specifically its
+multi-source variant: four operators (Bilbobus, Metro Bilbao, Euskotren,
+Bizkaibus) merged via `pipeline/import_gtfs_multi.py` into one city, four
+modes (bus, metro, tram, funicular).
 
-Also doubles as a regression fixture for the official-gtfs code path (the
-line-branching logic in `gtfs_routes_to_json.py` was built and verified
-against this exact data - Vigo's line 7 splits into 5 real destinations
-sharing a common trunk, a good stress test for that code).
+Two real data-quality problems are solved through config here rather than
+hand-patched data:
+
+- **Bizkaibus** is a provincial bus operator; only one of its ~100 lines
+  (the airport bus) belongs in Bilbao's example — `routeShortNames` keeps
+  just that one.
+- **Metro Bilbao's feed models its entire network as a single GTFS route**,
+  with L1 and L2 distinguishable only by `trip_headsign`. `lineOverrides`
+  splits it into the lines riders actually know, derived from the feed's
+  own `shape_id` naming rather than guessed from a diagram.
+
+See the [documentation site](https://xacobe.github.io/transitum/cities/multi-source)
+for the full walkthrough of both techniques (using Zürich as a second
+worked example there, since it exercises a couple of filters Bilbao's
+sources don't happen to need).
 
 ## Contents
 
-- `cities/vigo.json` — the real city entry, `cities/_countries.json` — the
-  `spain` country entry it needs. Copied into your own `config/cities/` by
-  `make use-example` (same one-file-per-city layout as `config/cities/`
-  itself - see `config/cities/example-city-b.example.jsonc`).
-- `gtfs/vigo/` — the official GTFS feed as imported by `import_gtfs.py`
-  (what would normally live at `data/gtfs/spain/vigo/`).
-- `cities/vigo/` — the app-ready JSON generated from that GTFS (what would
-  normally live at `data/cities/vigo/`). Note this sits alongside, not
-  inside, `cities/vigo.json` - a directory and a file can share a name stem.
+- `cities/bilbao.json` — the real city entry, `cities/_countries.json` —
+  the `spain` country entry it needs. Copied into your own
+  `config/cities/` by `make use-example` (same one-file-per-city layout as
+  `config/cities/` itself).
+- `gtfs/bilbao.zip` — the merged GTFS from all four operators, zipped
+  instead of loose `.txt`: the merge is ~60 MB as plain text (mostly
+  `stop_times.txt`) and ~8 MB zipped. `make use-example` copies it straight
+  to `data/.cache/bilbao.gtfs.zip` — the one place
+  `generate_transit_data.mjs` reads a GTFS zip from — rather than
+  extracting it to a `data/gtfs/spain/bilbao/` mirror first. Unzip it
+  yourself if you want to inspect the raw feed locally.
+- `cities/bilbao/` — the app-ready JSON generated from that GTFS, plus a
+  pre-built `tiles.pmtiles`. What would normally live at
+  `data/cities/bilbao/`. Note this sits alongside, not inside,
+  `cities/bilbao.json` — a directory and a file can share a name stem.
+
+### Why this example ships `tiles.pmtiles`
+
+`timetable.bin`, `stops.bin`, and `tiles.pmtiles` are normally gitignored
+and regenerated locally — reproducible from versioned source data, not
+worth committing for a live city. An example is different: it's already a
+point-in-time snapshot by design, same as the GTFS it ships (schedules will
+drift as the real operators update their feeds — that's expected, not a
+bug). `tiles.pmtiles` (8.4 MB, doesn't compress further — PMTiles is
+already internally compressed) is committed on the same logic: showing the
+whole app working, map included, right after `make use-example` outweighs
+the cost of one more stale-by-design snapshot.
 
 ## Using it
 
-Easiest: `make use-example COUNTRY=spain` from the repo root - copies
-`cities/vigo.json` (and the `spain` entry from `cities/_countries.json`)
-into your own `config/cities/`, and copies the data into `data/`, ready
-for `make dev`.
+Easiest: `make use-example COUNTRY=spain` from the repo root — copies
+`cities/bilbao.json` (and the `spain` entry from `cities/_countries.json`)
+into your own `config/cities/`, copies the data into `data/`, and
+regenerates the routing binaries — ready for `make dev`.
 
-To do it by hand instead: copy `cities/vigo.json` into `config/cities/`
+To do it by hand instead: copy `cities/bilbao.json` into `config/cities/`
 (and the `spain` entry from `cities/_countries.json` into your own
 `config/cities/_countries.json`, if not already present), then copy
-`gtfs/vigo/` to `data/gtfs/spain/vigo/` and `cities/vigo/` to
-`data/cities/vigo/` - or re-run the pipeline fresh with
-`make import-gtfs CITY=vigo URL=https://datos.vigo.org/data/transporte/gtfs_vigo.zip`
-(the feed only carries a rolling ~7-day calendar window, so the committed
-snapshot here will look increasingly stale over time - a fresh import gets
-current schedules).
+`gtfs/bilbao.zip` to `data/.cache/bilbao.gtfs.zip` and `cities/bilbao/` to
+`data/cities/bilbao/`, then run `node pipeline/generate_transit_data.mjs`
+to build the routing binaries — or re-run
+`python3 pipeline/import_gtfs_multi.py --city bilbao` instead of using the
+committed snapshot (the four source URLs are in `cities/bilbao.json`'s
+`transitSources`) for current data.

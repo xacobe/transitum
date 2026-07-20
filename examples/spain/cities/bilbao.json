@@ -1,0 +1,134 @@
+{
+  "slug": "bilbao",
+  "country": "spain",
+  "displayName": "Bilbao",
+  "feedId": "bilbao",
+  "center": {
+    "lat": 43.263,
+    "lon": -2.935
+  },
+  "searchBbox": {
+    "minLat": 43.1137,
+    "maxLat": 43.3901,
+    "minLon": -3.086,
+    "maxLon": -2.7803
+  },
+  "tileBbox": {
+    "minLat": 43.2137,
+    "maxLat": 43.315,
+    "minLon": -2.986,
+    "maxLon": -2.8803
+  },
+  "tileMinzoom": 8,
+  "nearbyRadiusMeters": 1500,
+  "offlineMb": 9.4,
+  "defaultAgencyId": "UNKNOWN",
+  "useOfficialLineColors": true,
+  "transitSources": [
+    {
+      "type": "official-gtfs",
+      "url": "https://ctb-gtfs.s3.eu-south-2.amazonaws.com/bilbobus.zip",
+      "agencyIds": { "Bilbobus": "BILBOBUS" }
+    },
+    {
+      "type": "official-gtfs",
+      "url": "http://www.metrobilbao.eus/imports/google_transit.zip",
+      "agencyIds": { "Metro Bilbao": "METRO" }
+    },
+    {
+      "type": "official-gtfs",
+      "url": "ftp://ftp.geo.euskadi.net/cartografia/Transporte/Moveuskadi/Euskotren/google_transit.zip",
+      "agencyIds": {
+        "ES:Euskotren:Operator:EUS_TrBi:": "TRANVIA",
+        "ES:Euskotren:Operator:EUS_Funi:": "FUNICULAR"
+      }
+    },
+    {
+      "type": "official-gtfs",
+      "url": "ftp://ftp.geo.euskadi.net/cartografia/Transporte/Moveuskadi/Bizkaibus/google_transit.zip",
+      "agencyIds": { "200": "BIZKAIBUS" },
+      "routeShortNames": ["A3247"]
+    }
+  ],
+  "agencies": [
+    {
+      "agencyId": "BILBOBUS",
+      "agencyName": "Bilbobus",
+      "agencyUrl": "https://www.bilbao.eus/bilbobus",
+      "agencyTimezone": "Europe/Madrid",
+      "agencyLang": "es"
+    },
+    {
+      "agencyId": "METRO",
+      "agencyName": "Metro Bilbao",
+      "agencyUrl": "https://www.metrobilbao.eus",
+      "agencyTimezone": "Europe/Madrid",
+      "agencyLang": "es"
+    },
+    {
+      "agencyId": "TRANVIA",
+      "agencyName": "Euskotren Tranbia",
+      "agencyUrl": "https://www.euskotren.eus/eu/tranvia/bilbao",
+      "agencyTimezone": "Europe/Madrid",
+      "agencyLang": "es"
+    },
+    {
+      "agencyId": "FUNICULAR",
+      "agencyName": "Euskotren Funicular Larreineta",
+      "agencyUrl": "https://www.euskotren.eus/eu/funicular",
+      "agencyTimezone": "Europe/Madrid",
+      "agencyLang": "es"
+    },
+    {
+      "agencyId": "BIZKAIBUS",
+      "agencyName": "Bizkaibus",
+      "agencyUrl": "https://www.bizkaia.eus/es/web/bizkaibus",
+      "agencyTimezone": "Europe/Madrid",
+      "agencyLang": "es"
+    }
+  ],
+  "operatorAliases": {},
+  "lineOverrides": {
+    "METRO": {
+      "Plentzia": { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+      "Sopela": { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+      "Larrabasterra": { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+      "Ibarbengoa": { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+      "Etxebarri": { "shortName": "L1", "longName": "Etxebarri - Plentzia" },
+      "Basauri": { "shortName": "L2", "longName": "Basauri - Kabiezes" },
+      "Kabiezes": { "shortName": "L2", "longName": "Basauri - Kabiezes" },
+      "San Ignazio": { "shortName": "L2", "longName": "Basauri - Kabiezes" }
+    }
+  },
+  "schedule": {
+    "averageSpeedKmh": 18.0,
+    "dwellSeconds": 20,
+    "serviceStart": "06:00:00",
+    "serviceEnd": "23:00:00",
+    "frequencyPeriods": [
+      {
+        "start": "06:00:00",
+        "end": "08:00:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      },
+      {
+        "start": "08:00:00",
+        "end": "18:00:00",
+        "headwaySeconds": 1200,
+        "reliability": "high"
+      },
+      {
+        "start": "18:00:00",
+        "end": "23:00:00",
+        "headwaySeconds": 1800,
+        "reliability": "medium"
+      }
+    ]
+  },
+  "osmPatches": {
+    "areaName": "Bilbao",
+    "duplicateRelationIds": [],
+    "refAliases": {}
+  }
+}
