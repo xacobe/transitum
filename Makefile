@@ -9,13 +9,16 @@ COMPOSE := docker compose --env-file config/.env
 # is the shared country registry, not a city, hence the name filter below.
 CITIES := $(shell python3 -c "import glob,json,os; print(' '.join(json.load(open(p))['slug'] for p in glob.glob('config/cities/*.json') if os.path.basename(p) != '_countries.json'))" 2>/dev/null)
 
-.PHONY: help dev build deploy data data-common pois tiles install add-city import-gtfs icons use-example line-colors
+.PHONY: help dev build deploy data data-common pois tiles install add-city import-gtfs icons use-example line-colors docs-dev docs-build
 
 help:
 	@echo ""
 	@echo "  make install          Install frontend dependencies"
 	@echo "  make dev              Start local dev server (http://localhost:5173)"
 	@echo "  make build            Build frontend for production"
+	@echo ""
+	@echo "  make docs-dev         Start the documentation site locally (http://localhost:5175)"
+	@echo "  make docs-build       Build the documentation site (docs/.vitepress/dist)"
 	@echo ""
 	@echo "  make use-example COUNTRY=spain    Add a working example country (see examples/) - no OSM/GTFS fetch needed"
 	@echo "  make add-city         Generate a starter config/cities/<slug>.json entry for a new city"
@@ -117,6 +120,12 @@ dev:
 
 build:
 	cd frontend && npm run build
+
+docs-dev:
+	cd docs && npm run dev
+
+docs-build:
+	cd docs && npm run build
 
 # Regenerate all pipeline outputs for a single city, reconstructing GTFS
 # from OSM. Usage: make data CITY=ouagadougou
