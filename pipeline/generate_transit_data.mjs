@@ -121,6 +121,12 @@ const today = toUtcDate(
   new Date().getUTCDate(),
 )
 
+// Collect failures instead of aborting on the first one, so every city still
+// gets a chance to generate - but surface them via a non-zero exit code at the
+// end. Otherwise a total failure exits 0 and callers (make, use_example.py's
+// check=True subprocess) treat generation as successful.
+const failures = []
+
 for (const city of cities) {
   const gtfsPath = path.join(gtfsRoot, city.gtfs)
   const outDir   = path.join(dataRoot, city.slug)
@@ -171,5 +177,11 @@ for (const city of cities) {
     console.log(`  ✓ ${city.slug}: ${stopsIndex.size()} stops, ${writtenHashes.size} distinct service pattern(s)`)
   } catch (err) {
     console.error(`  ✗ ${city.slug}:`, err.message)
+    failures.push(city.slug)
   }
+}
+
+if (failures.length) {
+  console.error(`\nFailed to generate routing binaries for ${failures.length} city/cities: ${failures.join(', ')}`)
+  process.exitCode = 1
 }

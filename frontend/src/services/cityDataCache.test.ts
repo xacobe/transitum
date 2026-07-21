@@ -38,4 +38,15 @@ describe('createCityDataCache', () => {
     expect(loader).toHaveBeenCalledTimes(1)
     resolveFn('done')
   })
+
+  it('evicts a rejected load so the next call retries instead of staying poisoned', async () => {
+    const loader = vi.fn()
+      .mockRejectedValueOnce(new Error('network blip'))
+      .mockResolvedValueOnce('data:bilbao')
+    const load = createCityDataCache(loader)
+
+    await expect(load('bilbao')).rejects.toThrow('network blip')
+    expect(await load('bilbao')).toBe('data:bilbao')
+    expect(loader).toHaveBeenCalledTimes(2)
+  })
 })
