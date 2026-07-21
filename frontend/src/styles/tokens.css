@@ -326,4 +326,23 @@
   /* Generic (non-route) bus stop marker on the map (MiniMap.vue) - same in
      both themes, unlike --color-accent/--color-map-pin which flip. */
   --color-stop-dot: #2563b6;
+
+  /* Per-TransitMode identity colors - mode filter chips (ModeFilterBar.vue)
+     and stop map sprites (map/stopIcon.ts). Same in both themes, same
+     reasoning as --color-stop-dot above: these identify a mode, not a
+     semantic state, so they shouldn't shift with light/dark. --color-mode-bus
+     matches --color-stop-dot exactly (bus is the fallback mode everywhere
+     else in the app, so its color is the one already in use today). */
+  /* Dark enough for white text/icons at ~4.5:1+ contrast (used as solid
+     chip backgrounds when a mode filter is active, see ModeFilterBar.vue). */
+  --color-mode-bus:         #2563b6; /* blue */
+  --color-mode-metro:       #b91c1c; /* red */
+  --color-mode-tram:        #6d28d9; /* violet */
+  --color-mode-rail:        #c2410c; /* orange */
+  --color-mode-ferry:       #0f766e; /* teal */
+  --color-mode-funicular:   #92400e; /* brown */
+  --color-mode-aerial_lift: #0369a1; /* sky blue */
+  --color-mode-cable_tram:  #be185d; /* pink */
+  --color-mode-trolleybus:  #4d7c0f; /* olive */
+  --color-mode-monorail:    #a21caf; /* magenta */
 }

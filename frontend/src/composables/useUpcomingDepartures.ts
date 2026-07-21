@@ -24,7 +24,10 @@ async function tryOfflineDepartures(
     if (!offline) return null
     const { findOfflineDepartures } = await import('@/composables/useMinotorRouting')
     return findOfflineDepartures(offline.timetable, offline.stopsIndex, stopId, shortNames, time, maxCount)
-  } catch {
+  } catch (e) {
+    // Best-effort: on failure we fall back to the server request below. Log so
+    // a genuine bug in the local path isn't silently masked by that fallback.
+    console.warn('[departures] local departures failed, falling back to server', e)
     return null
   }
 }

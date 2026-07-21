@@ -81,7 +81,7 @@ import zipfile
 from pathlib import Path
 
 from cities import get_city, gtfs_dir, gtfs_zip_path
-from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows
+from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows, write_gtfs_zip
 
 
 DOWNLOAD_RETRIES = 4
@@ -393,12 +393,7 @@ def main() -> None:
         write_csv_rows(out_dir / f"{name}.txt", rows)
 
     zip_path = gtfs_zip_path(city["slug"])
-    zip_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for name in GTFS_FILES:
-            p = out_dir / name
-            if p.exists():
-                zf.write(p, name)
+    write_gtfs_zip(zip_path, out_dir)
 
     total_routes = len(merged["routes"])
     total_stops = len(merged["stops"])

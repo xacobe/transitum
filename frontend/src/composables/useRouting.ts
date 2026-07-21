@@ -182,7 +182,7 @@ async function tryLocalRouting(params: RoutingParams, citySlug: string): Promise
   try {
     const [offline, routes]: [OfflineRouter | null, Route[] | null] =
       await Promise.all([
-        getOfflineRouter(citySlug),
+        getOfflineRouter(citySlug, params.date),
         loadCityRoutes(citySlug).catch(() => null),
       ])
     if (!offline) return []
@@ -192,7 +192,11 @@ async function tryLocalRouting(params: RoutingParams, citySlug: string): Promise
       params.fromLat, params.fromLon, params.toLat, params.toLon,
       params.time, routes, params.fromName, params.toName, params.transportModes,
     ) as Itinerary[]
-  } catch {
+  } catch (e) {
+    // Offline routing is a best-effort optimization: on failure we fall back
+    // to the server. Log so a genuine bug in the local path is visible rather
+    // than silently masked by that fallback.
+    console.warn('[routing] local routing failed, falling back to server', e)
     return []
   }
 }

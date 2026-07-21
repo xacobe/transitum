@@ -21,7 +21,7 @@
   },
   "tileMinzoom": 8,
   "nearbyRadiusMeters": 1500,
-  "offlineMb": 9.4,
+  "offlineMb": 10.3,
   "defaultAgencyId": "UNKNOWN",
   "useOfficialLineColors": true,
   "transitSources": [

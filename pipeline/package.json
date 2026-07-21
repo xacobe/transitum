@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "minotor": "^11.2.3"
+    "csv-parse": "^6.2.1",
+    "minotor": "^11.2.3",
+    "node-stream-zip": "^1.15.0"
   }
 }

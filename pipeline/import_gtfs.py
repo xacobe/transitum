@@ -23,7 +23,7 @@ import urllib.request
 import zipfile
 
 from cities import get_city, gtfs_dir, gtfs_zip_path
-from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows
+from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows, write_gtfs_zip
 
 
 def main():
@@ -86,12 +86,7 @@ def main():
     # Re-zip with the remapped agency_id so data/.cache/<slug>.gtfs.zip
     # (consumed by generate-transit-data) matches what's on disk in gtfs_dir().
     zip_path = gtfs_zip_path(city["slug"])
-    zip_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for name in GTFS_FILES:
-            p = out_dir / name
-            if p.exists():
-                zf.write(p, name)
+    write_gtfs_zip(zip_path, out_dir)
 
     print(f"Official GTFS imported to {out_dir}")
     print(f"Zip ready at {zip_path}")
