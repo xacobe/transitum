@@ -29,9 +29,8 @@ make use-example COUNTRY=burkina-faso CITY=ouagadougou   # just one city from a 
 
 Each copies a ready-to-use `<slug>.json` into `config/cities/` plus its
 pre-generated GTFS/JSON data into `data/` — no OSM or live-GTFS fetch
-needed. Bilbao's example also ships a pre-built `tiles.pmtiles`, so the map
-renders immediately; the Burkina Faso cities don't, so their map falls back
-to no basemap until you run `make tiles CITY=<slug>` separately. See
+needed. Both examples also ship a pre-built `tiles.pmtiles` per city, so
+the map renders immediately with no extra `make tiles` step. See
 `examples/<country>/README.md` for what each one demonstrates.
 
 To add a real city instead, see [Adding a city](/cities/).
