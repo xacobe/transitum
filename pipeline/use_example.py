@@ -5,8 +5,9 @@ The framework ships with config/cities/ empty - this is the "easy way to try
 one" it points to. Copies the city files (and the country entries they need)
 from examples/<country>/cities/ into config/cities/, copies that example's
 pre-generated gtfs/ and cities/ data into data/, and generates the Minotor
-routing binaries (timetable.bin + stops.bin) from that GTFS - so the app,
-including offline/online route planning, runs immediately after `make dev`.
+routing binaries (one timetable.<hash>.bin per weekday pattern, plus
+stops.bin) from that GTFS - so the app, including offline/online route
+planning, runs immediately after `make dev`.
 No network calls needed (no OSM, no live GTFS feed).
 
 Map tiles are usually NOT generated here - `make tiles CITY=<slug>` needs
