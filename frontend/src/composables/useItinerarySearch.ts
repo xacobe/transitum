@@ -10,6 +10,7 @@ import { useCityStore } from '@/stores/city'
 import { formatTime } from '@/services/format'
 import { buildResultsQuery, parseResultsQuery } from '@/services/resultsQuery'
 import { useNavigation } from '@/composables/useNavigation'
+import { useServicePatterns } from '@/composables/useServicePatterns'
 import type { Itinerary, BusLeg } from '@/types'
 
 interface ItinerarySearchOptions {
@@ -100,18 +101,41 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
 
   const activeItinerary = computed(() => selectedItinerary.value ?? sortedItineraries.value[0] ?? null)
 
+  // Advanced search, editable directly from the results header (RouteHeader,
+  // which owns its own open/closed toggle) as well as from the initial
+  // DestinationSearchView search - the URL query is the single source of
+  // truth, so editing either just navigates and the watcher below
+  // re-fetches. Empty string means "plan for right now"; the picker inputs
+  // use "HH:MM" while the query/RoutingParams use "HH:MM:SS" throughout.
+  function applyDateTime(date: string, time: string): void {
+    router.replace({ query: { ...route.query, date: date || undefined, time: time ? `${time}:00` : undefined } })
+  }
+  const selectedDate = computed<string>({
+    get: () => parsed.value?.date ?? '',
+    set: (v) => applyDateTime(v, selectedTime.value),
+  })
+  const selectedTime = computed<string>({
+    get: () => parsed.value?.time?.slice(0, 5) ?? '',
+    set: (v) => applyDateTime(selectedDate.value, v),
+  })
+  const { ensureLoaded: loadDatePatterns, dateMin, dateMax, needsConnection } = useServicePatterns()
+  const dateNeedsConnection = computed(() => needsConnection(selectedDate.value))
+
   watch(
-    [fromLat, fromLon, toLat, toLon, transportModesParam],
+    [fromLat, fromLon, toLat, toLon, transportModesParam, selectedDate, selectedTime],
     () => {
       selectedItinerary.value = null
       if (Number.isNaN(fromLat.value) || Number.isNaN(toLat.value)) return
-      const when = nextServiceStart()
-      const time = `${formatTime(when)}:00`
+      // An explicit date/time from advanced search overrides the default
+      // "plan for right now" behavior (see DestinationSearchView.vue).
+      const requestedTime = parsed.value?.time
+      const requestedDate = parsed.value?.date
+      const time = requestedTime ?? `${formatTime(nextServiceStart())}:00`
       track('route-searched', { from: fromName.value, to: toName.value, city: cityStore.activeSlug })
       fetchPlan({
         fromLat: fromLat.value, fromLon: fromLon.value,
         toLat: toLat.value, toLon: toLon.value,
-        time, fromName: fromName.value, toName: toName.value,
+        time, date: requestedDate, fromName: fromName.value, toName: toName.value,
         transportModes: transportModesParam.value,
       })
     },
@@ -162,5 +186,6 @@ export function useItinerarySearch({ backRouteName, selfRouteName, searchRouteNa
     swapOriginDestination,
     goEditOrigin: () => goEdit('origin'),
     goEditDestination: () => goEdit('destination'),
+    selectedDate, selectedTime, dateMin, dateMax, dateNeedsConnection, loadDatePatterns,
   }
 }

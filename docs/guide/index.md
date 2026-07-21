@@ -23,7 +23,7 @@ building one from scratch, in a place where:
 ## Features
 
 - **Nearby stops** — closest bus stops on an interactive map and in a list view
-- **Route planning** — multi-leg itineraries with walking segments, up to 5 Pareto-optimal alternatives
+- **Route planning** — multi-leg itineraries with walking segments, up to 5 Pareto-optimal alternatives; advanced search for a specific date/time, weekday-aware (Mon-Fri/Saturday/Sunday) both online and offline (see [Offline architecture](/guide/offline-architecture))
 - **Line browser** — full line list with route map and stop timeline for each direction
 - **Favorites** — saved stops and itineraries, persisted locally
 - **Offline mode** — city pack (vector map tiles, routing binaries, stop list, POIs) works fully offline after first load

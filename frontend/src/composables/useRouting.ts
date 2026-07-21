@@ -182,7 +182,7 @@ async function tryLocalRouting(params: RoutingParams, citySlug: string): Promise
   try {
     const [offline, routes]: [OfflineRouter | null, Route[] | null] =
       await Promise.all([
-        getOfflineRouter(citySlug),
+        getOfflineRouter(citySlug, params.date),
         loadCityRoutes(citySlug).catch(() => null),
       ])
     if (!offline) return []

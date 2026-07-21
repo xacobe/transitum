@@ -43,6 +43,12 @@ const {
   swapOriginDestination,
   goEditOrigin,
   goEditDestination,
+  selectedDate,
+  selectedTime,
+  dateMin,
+  dateMax,
+  dateNeedsConnection,
+  loadDatePatterns,
 } = useItinerarySearch({ backRouteName: 'home', selfRouteName: 'mapResults', searchRouteName: 'search' })
 
 const isOfflineError = useOfflineError(error)
@@ -121,10 +127,18 @@ function onPickDestination(pt: { lat: number; lon: number }) {
     <RouteHeader
       :from-name="fromName"
       :to-name="toName"
+      :selected-date="selectedDate"
+      :selected-time="selectedTime"
+      :date-min="dateMin"
+      :date-max="dateMax"
+      :needs-connection="dateNeedsConnection"
       @back="goBack"
       @swap="swapOriginDestination"
       @edit-from="goEditOrigin"
       @edit-to="goEditDestination"
+      @update:selected-date="selectedDate = $event"
+      @update:selected-time="selectedTime = $event"
+      @toggle-advanced="loadDatePatterns"
     />
     <ModeFilterBar
       v-if="showModeFilter"

@@ -13,13 +13,14 @@ examples/
 └── burkina-faso/         ← OSM-synthetic pattern, three cities
 
 data/
-├── cities/<city>/        ← app-ready outputs (versioned except .bin and .pmtiles)
+├── cities/<city>/        ← app-ready outputs (versioned except .bin, patterns.json, and .pmtiles)
 │   ├── stops.json            stop list
 │   ├── routes.json           line geometries + stop sequences
 │   ├── routes-meta.json      line metadata (no geometry, for stop panels)
 │   ├── pois.json             named places with tier field
 │   ├── version.json          data version stamp (cache invalidation)
-│   ├── timetable.bin         Minotor routing binary (gitignored, regenerate locally)
+│   ├── patterns.json         weekday → timetable pattern map (gitignored, regenerate locally)
+│   ├── timetable.<hash>.bin  Minotor routing binary, one per weekday pattern (gitignored, regenerate locally)
 │   ├── stops.bin              Minotor stops binary (gitignored, regenerate locally)
 │   └── tiles.pmtiles         vector map tiles (gitignored, regenerate locally)
 ├── gtfs/<country>/<city>/  ← versioned synthetic GTFS source files (hand-curated from OSM)
@@ -34,7 +35,7 @@ pipeline/                 ← data generation scripts (Python + Node), npm works
 ├── osm_to_pois.py            OSM → pois.json
 ├── gtfs_stops_to_json.py     GTFS stops → stops.json
 ├── gtfs_routes_to_json.py    GTFS + OSM shapes → routes.json + routes-meta.json
-├── generate_transit_data.mjs GTFS zip → timetable.bin + stops.bin (Minotor)
+├── generate_transit_data.mjs GTFS zip → timetable.<hash>.bin (per weekday pattern) + stops.bin (Minotor)
 ├── generate_pmtiles.py       OSM PBF → tiles.pmtiles (Planetiler)
 ├── check_osm_routes.py       CI: detects OSM route changes since last sync
 ├── cities.py                 shared path utilities + city registry loader

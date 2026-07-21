@@ -79,7 +79,7 @@ both evolve as the source feeds do.
 
 ## Why this example ships `tiles.pmtiles`
 
-`timetable.bin`, `stops.bin`, and `tiles.pmtiles` are normally gitignored
+`timetable.<hash>.bin`, `patterns.json`, `stops.bin`, and `tiles.pmtiles` are normally gitignored
 and regenerated locally — reproducible from versioned source data, not
 worth committing for a live city (see
 [Generated data files](/pipeline/data-files)). An example is different:

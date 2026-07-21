@@ -79,7 +79,7 @@ const server = createServer(async (req, res) => {
       return
     }
 
-    const { fromLat, fromLon, toLat, toLon, time, citySlug, fromName, toName, numItineraries, transportModes } =
+    const { fromLat, fromLon, toLat, toLon, time, date, citySlug, fromName, toName, numItineraries, transportModes } =
       body
     const cityData = cities.get(citySlug)
     if (!cityData) {
@@ -95,6 +95,11 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Invalid coordinates' }))
       return
     }
+    if (date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.statusCode = 400
+      res.end(JSON.stringify({ error: 'date must be YYYY-MM-DD' }))
+      return
+    }
 
     try {
       const itineraries = planRoute(cityData, {
@@ -103,6 +108,7 @@ const server = createServer(async (req, res) => {
         toLat: lat2,
         toLon: lon2,
         time: time ?? '08:00:00',
+        date: date ?? null,
         fromName: fromName ?? null,
         toName: toName ?? null,
         numItineraries: Math.min(Math.max(1, Number(numItineraries ?? 5)), 10),
@@ -124,6 +130,7 @@ const server = createServer(async (req, res) => {
     // serves a handful of lines, not dozens.
     const lines = (url.searchParams.get('lines') ?? '').split(',').filter(Boolean).slice(0, 20)
     const time = url.searchParams.get('time') ?? '08:00:00'
+    const date = url.searchParams.get('date')
     // Capped well above any real day's trip count for a single line — the
     // cap exists to bound the search loop, not because 60 is a meaningful
     // number of departures to show.
@@ -132,6 +139,11 @@ const server = createServer(async (req, res) => {
     if (!citySlug || !stopId || !lines.length) {
       res.statusCode = 400
       res.end(JSON.stringify({ error: 'citySlug, stopId and lines are required' }))
+      return
+    }
+    if (date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.statusCode = 400
+      res.end(JSON.stringify({ error: 'date must be YYYY-MM-DD' }))
       return
     }
 
@@ -143,7 +155,7 @@ const server = createServer(async (req, res) => {
     }
 
     try {
-      const departures = getStopDepartures(cityData, { stopId, lines, time, maxCount })
+      const departures = getStopDepartures(cityData, { stopId, lines, time, maxCount, date })
       res.end(JSON.stringify({ departures }))
     } catch (err) {
       console.error('getStopDepartures error:', err)
