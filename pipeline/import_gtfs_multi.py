@@ -81,7 +81,7 @@ import zipfile
 from pathlib import Path
 
 from cities import get_city, gtfs_dir, gtfs_zip_path
-from gtfs_io import GTFS_FILES, read_csv_rows, write_csv_rows
+from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows
 
 
 DOWNLOAD_RETRIES = 4
@@ -103,7 +103,7 @@ def download_gtfs(url: str) -> Path:
             tmp_dir = Path("/tmp") / f"transitum-gtfs-src-{abs(hash(url))}"
             tmp_dir.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-                zf.extractall(tmp_dir)
+                safe_extract_zip(zf, tmp_dir)
             return tmp_dir
         except (zipfile.BadZipFile, OSError) as exc:
             last_error = exc

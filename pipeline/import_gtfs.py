@@ -23,7 +23,7 @@ import urllib.request
 import zipfile
 
 from cities import get_city, gtfs_dir, gtfs_zip_path
-from gtfs_io import GTFS_FILES, read_csv_rows, write_csv_rows
+from gtfs_io import GTFS_FILES, read_csv_rows, safe_extract_zip, write_csv_rows
 
 
 def main():
@@ -48,7 +48,7 @@ def main():
     for name in GTFS_FILES:
         (out_dir / name).unlink(missing_ok=True)
     with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        zf.extractall(out_dir)
+        safe_extract_zip(zf, out_dir)
 
     # Remap agency_id(s): the feed's own ids are provider-internal and
     # meaningless outside it (e.g. "1") - rewrite them to the city's
