@@ -19,6 +19,9 @@ import {
   IconHelpCircle,
   IconMapPin,
   IconChevronRight,
+  IconChevronDown,
+  IconChevronUp,
+  IconCheck,
   IconX,
   IconTrash,
   IconRefresh,
@@ -69,9 +72,11 @@ async function handleUpdate(slug: string) {
   }
 }
 
-function cycleLocale() {
-  const idx = SUPPORTED_LOCALES.findIndex((l) => l === locale.value)
-  setLocale(SUPPORTED_LOCALES[(idx + 1) % SUPPORTED_LOCALES.length])
+const languageOpen = ref(false)
+
+function selectLocale(loc: (typeof SUPPORTED_LOCALES)[number]) {
+  setLocale(loc)
+  languageOpen.value = false
 }
 
 function goHelp() {
@@ -102,13 +107,39 @@ function close() {
     <div class="screen-content">
       <div class="content-inner">
         <div class="settings-card">
-          <SettingRow v-if="SUPPORTED_LOCALES.length > 1" tag="button" :icon="IconWorld" @click="cycleLocale">
+          <SettingRow
+            v-if="SUPPORTED_LOCALES.length > 1"
+            tag="button"
+            :icon="IconWorld"
+            :aria-expanded="languageOpen"
+            @click="languageOpen = !languageOpen"
+          >
             {{ t('settings.language') }}
             <template #trailing>
               <span class="setting-value">{{ localeName(locale) }}</span>
-              <IconChevronRight class="chevron" :size="16" aria-hidden="true" />
+              <IconChevronUp v-if="languageOpen" class="chevron" :size="16" aria-hidden="true" />
+              <IconChevronDown v-else class="chevron" :size="16" aria-hidden="true" />
             </template>
           </SettingRow>
+          <div v-if="languageOpen" class="language-options" role="listbox">
+            <button
+              v-for="loc in SUPPORTED_LOCALES"
+              :key="loc"
+              type="button"
+              class="language-option"
+              role="option"
+              :aria-selected="loc === locale"
+              @click="selectLocale(loc)"
+            >
+              <IconCheck
+                :size="16"
+                class="language-check"
+                :class="{ 'language-check--placeholder': loc !== locale }"
+                aria-hidden="true"
+              />
+              {{ localeName(loc) }}
+            </button>
+          </div>
           <SettingRow :icon="theme.isDark ? IconSun : IconMoon">
             {{ t('settings.theme') }}
             <template #trailing>
@@ -273,6 +304,32 @@ function close() {
 .setting-value {
   font: 600 12px var(--font-ui);
   color: var(--color-muted);
+}
+
+.language-options {
+  background: var(--color-field);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  text-align: right;
+  font: var(--text-label);
+  color: var(--color-text);
+}
+
+.language-check {
+  flex: none;
+  color: var(--color-accent);
+}
+
+.language-check--placeholder {
+  visibility: hidden;
 }
 
 .section-title {
