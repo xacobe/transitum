@@ -3,6 +3,7 @@ import_gtfs.py (single official feed) and import_gtfs_multi.py (several
 official feeds combined into one city, see its own docstring).
 """
 import csv
+import zipfile
 
 # Every GTFS text file either import script might touch. Order matters for
 # import_gtfs.py's re-zip step (cosmetic - GTFS readers don't care), not for
@@ -47,3 +48,17 @@ def write_csv_rows(path, rows: list[dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=fieldnames, restval="")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def write_gtfs_zip(zip_path, out_dir) -> None:
+    """Zips whichever GTFS_FILES exist in `out_dir` into `zip_path`
+    (creating its parent dir), producing the data/.cache/<slug>.gtfs.zip
+    that generate-transit-data consumes so it matches what's on disk in
+    gtfs_dir(). File order follows GTFS_FILES (cosmetic - GTFS readers
+    don't care)."""
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name in GTFS_FILES:
+            p = out_dir / name
+            if p.exists():
+                zf.write(p, name)

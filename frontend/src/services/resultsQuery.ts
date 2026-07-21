@@ -29,6 +29,24 @@ export function buildResultsQuery(
   return q
 }
 
+/**
+ * Reads one side (origin/dest) of a search back out of a route query into a
+ * NamedPosition. Used by the destination-search screens, whose URLs carry
+ * the other, already-chosen endpoint as `originLat`/`originLon`/`originName`
+ * or `destLat`/`destLon`/`destName` while the user edits this one.
+ */
+export function namedPositionFromQuery(
+  query: LocationQuery,
+  prefix: 'origin' | 'dest',
+  fallbackName = '',
+): NamedPosition {
+  return {
+    lat: Number(query[`${prefix}Lat`]),
+    lon: Number(query[`${prefix}Lon`]),
+    name: (query[`${prefix}Name`] as string) ?? fallbackName,
+  }
+}
+
 /** Parse the shared results URL query, returning null if coordinates are invalid. */
 export function parseResultsQuery(
   query: LocationQuery,

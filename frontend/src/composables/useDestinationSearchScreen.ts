@@ -3,7 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDestinationSearch } from '@/composables/useDestinationSearch'
 import { useNavigation } from '@/composables/useNavigation'
-import { buildResultsQuery } from '@/services/resultsQuery'
+import { buildResultsQuery, namedPositionFromQuery } from '@/services/resultsQuery'
 import type { SearchResult } from '@/types'
 
 interface DestinationSearchScreenOptions {
@@ -54,7 +54,7 @@ export function useDestinationSearchScreen({ homeRouteName, resultsRouteName }: 
           name: resultsRouteName,
           query: buildResultsQuery(
             { lat: result.lat, lon: result.lon, name: result.name },
-            { lat: Number(route.query.destLat), lon: Number(route.query.destLon), name: (route.query.destName as string) ?? '' },
+            namedPositionFromQuery(route.query, 'dest'),
           ),
         })
         return
@@ -66,7 +66,7 @@ export function useDestinationSearchScreen({ homeRouteName, resultsRouteName }: 
     router.push({
       name: resultsRouteName,
       query: buildResultsQuery(
-        { lat: Number(route.query.originLat), lon: Number(route.query.originLon), name: (route.query.originName as string) ?? t('common.myPosition') },
+        namedPositionFromQuery(route.query, 'origin', t('common.myPosition')),
         { lat: result.lat, lon: result.lon, name: result.name },
       ),
     })
@@ -78,8 +78,8 @@ export function useDestinationSearchScreen({ homeRouteName, resultsRouteName }: 
         router.push({
           name: resultsRouteName,
           query: buildResultsQuery(
-            { lat: Number(route.query.originLat), lon: Number(route.query.originLon), name: (route.query.originName as string) ?? '' },
-            { lat: Number(route.query.destLat), lon: Number(route.query.destLon), name: (route.query.destName as string) ?? '' },
+            namedPositionFromQuery(route.query, 'origin'),
+            namedPositionFromQuery(route.query, 'dest'),
           ),
         })
         return
