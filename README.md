@@ -1,6 +1,6 @@
 # Transitum
 
-Progressive web app framework for public transit. Answers two questions: **"which bus stops near me?"** and **"how do I get from A to B?"**
+Progressive web app framework for public transit: explore nearby stops, browse lines, and plan multi-leg trips — offline and tuned to run on 2G/3G connections and low-end phones, for any city.
 
 Ships with no city pre-configured — `config/cities/` is empty by default. Two working examples live under `examples/`: `spain/` (Bilbao, official-GTFS pattern, multi-source — four operators merged across bus/metro/tram/funicular) and `burkina-faso/` (Ouagadougou/Koudougou/Bobo-Dioulasso, OSM-synthetic pattern) — both drop in with one command.
 
