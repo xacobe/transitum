@@ -36,8 +36,32 @@ function readMapColors() {
   return c
 }
 
+// A `transportation`-layer road line with round joins by default (motorway
+// casing uses butt caps), a colour, and a zoom-interpolated width. Every
+// road tier is drawn as a case/fill pair that only differs in colour and
+// width, so they all funnel through here.
+function roadLine(id, { filter, minzoom, cap = 'round', color, width }) {
+  const layer = {
+    id, type: 'line',
+    source: 'openmaptiles', 'source-layer': 'transportation',
+    filter,
+  }
+  if (minzoom !== undefined) layer.minzoom = minzoom
+  layer.layout = { 'line-cap': cap, 'line-join': 'round' }
+  layer.paint = { 'line-color': color, 'line-width': width }
+  return layer
+}
+
 export function buildMapStyle(tilesUrl) {
   const c = readMapColors()
+
+  // Shared text halo (always the theme's label-halo colour) - every label
+  // layer only varies the text colour and the halo width.
+  const labelPaint = (color, haloWidth) => ({
+    'text-color': color,
+    'text-halo-color': c.label_halo,
+    'text-halo-width': haloWidth,
+  })
 
   return {
     version: 8,
@@ -118,11 +142,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 12,
           'text-font': ['Noto Sans Bold'],
         },
-        paint: {
-          'text-color': c.aeroway_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.aeroway_label, 1.5) },
 
       // Fallback: aerodrome point from the poi layer (always has name in OML)
       { id: 'aeroway-poi-label', type: 'symbol',
@@ -135,11 +155,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 12,
           'text-font': ['Noto Sans Bold'],
         },
-        paint: {
-          'text-color': c.aeroway_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.aeroway_label, 1.5) },
 
       // ── Admin boundaries (arrondissements / communes) ──────────────────────
       { id: 'boundary-admin', type: 'line',
@@ -157,86 +173,52 @@ export function buildMapStyle(tilesUrl) {
         } },
 
       // ── Roads — minor (zoom 13+) ───────────────────────────────────────────
-      { id: 'road-minor-case', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+      roadLine('road-minor-case', {
         filter: ['match', ['get', 'class'], ['minor', 'service', 'track', 'path'], true, false],
-        minzoom: 13,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_minor_case,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 1, 14, 2.5, 16, 7],
-        } },
-
-      { id: 'road-minor-fill', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+        minzoom: 13, color: c.road_minor_case,
+        width: ['interpolate', ['linear'], ['zoom'], 13, 1, 14, 2.5, 16, 7],
+      }),
+      roadLine('road-minor-fill', {
         filter: ['match', ['get', 'class'], ['minor', 'service', 'track', 'path'], true, false],
-        minzoom: 13,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_minor_fill,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 14, 1.5, 16, 5],
-        } },
+        minzoom: 13, color: c.road_minor_fill,
+        width: ['interpolate', ['linear'], ['zoom'], 13, 0.5, 14, 1.5, 16, 5],
+      }),
 
       // ── Roads — secondary / tertiary ───────────────────────────────────────
-      { id: 'road-secondary-case', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+      roadLine('road-secondary-case', {
         filter: ['match', ['get', 'class'], ['secondary', 'tertiary'], true, false],
-        minzoom: 11,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_secondary_case,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2, 16, 10],
-        } },
-
-      { id: 'road-secondary-fill', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+        minzoom: 11, color: c.road_secondary_case,
+        width: ['interpolate', ['linear'], ['zoom'], 11, 2, 16, 10],
+      }),
+      roadLine('road-secondary-fill', {
         filter: ['match', ['get', 'class'], ['secondary', 'tertiary'], true, false],
-        minzoom: 11,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_secondary_fill,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 7.5],
-        } },
+        minzoom: 11, color: c.road_secondary_fill,
+        width: ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 7.5],
+      }),
 
       // ── Roads — primary / trunk ────────────────────────────────────────────
-      { id: 'road-primary-case', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+      roadLine('road-primary-case', {
         filter: ['match', ['get', 'class'], ['primary', 'trunk'], true, false],
-        minzoom: 8,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_primary_case,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 16, 14],
-        } },
-
-      { id: 'road-primary-fill', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+        minzoom: 8, color: c.road_primary_case,
+        width: ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 16, 14],
+      }),
+      roadLine('road-primary-fill', {
         filter: ['match', ['get', 'class'], ['primary', 'trunk'], true, false],
-        minzoom: 8,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_primary_fill,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 11, 2, 16, 11],
-        } },
+        minzoom: 8, color: c.road_primary_fill,
+        width: ['interpolate', ['linear'], ['zoom'], 8, 0.5, 11, 2, 16, 11],
+      }),
 
       // ── Roads — motorway ───────────────────────────────────────────────────
-      { id: 'road-motorway-case', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
+      roadLine('road-motorway-case', {
+        filter: ['==', ['get', 'class'], 'motorway'], cap: 'butt',
+        color: c.road_motorway_case,
+        width: ['interpolate', ['linear'], ['zoom'], 8, 1.5, 11, 4, 16, 16],
+      }),
+      roadLine('road-motorway-fill', {
         filter: ['==', ['get', 'class'], 'motorway'],
-        layout: { 'line-cap': 'butt', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_motorway_case,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.5, 11, 4, 16, 16],
-        } },
-
-      { id: 'road-motorway-fill', type: 'line',
-        source: 'openmaptiles', 'source-layer': 'transportation',
-        filter: ['==', ['get', 'class'], 'motorway'],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': c.road_motorway_fill,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 16, 13],
-        } },
+        color: c.road_motorway_fill,
+        width: ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 16, 13],
+      }),
 
       // ── Road labels ────────────────────────────────────────────────────────
       // ── Water labels ───────────────────────────────────────────────────────
@@ -249,11 +231,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 11,
           'text-font': ['Noto Sans Italic'],
         },
-        paint: {
-          'text-color': c.water_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.water_label, 1) },
 
       { id: 'waterway-label', type: 'symbol',
         source: 'openmaptiles', 'source-layer': 'waterway',
@@ -265,11 +243,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 10,
           'text-font': ['Noto Sans Regular'],
         },
-        paint: {
-          'text-color': c.water_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.water_label, 1) },
 
       // ── Road labels ────────────────────────────────────────────────────────
       // Major arteries from zoom 12, minor streets from 14.
@@ -286,11 +260,7 @@ export function buildMapStyle(tilesUrl) {
           'text-font': ['Noto Sans Regular'],
           'text-padding': 3,
         },
-        paint: {
-          'text-color': c.road_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.road_label, 1) },
 
       { id: 'road-label-minor', type: 'symbol',
         source: 'openmaptiles', 'source-layer': 'transportation_name',
@@ -303,11 +273,7 @@ export function buildMapStyle(tilesUrl) {
           'text-font': ['Noto Sans Regular'],
           'text-padding': 2,
         },
-        paint: {
-          'text-color': c.road_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.road_label, 1) },
 
       // ── Rail station labels ────────────────────────────────────────────────
       { id: 'station-label', type: 'symbol',
@@ -319,11 +285,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 11,
           'text-font': ['Noto Sans Regular'],
         },
-        paint: {
-          'text-color': c.place_village,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.place_village, 1.5) },
 
       // ── Parks / green areas (Zone de Bois etc.) ────────────────────────────
       { id: 'park-label', type: 'symbol',
@@ -339,11 +301,7 @@ export function buildMapStyle(tilesUrl) {
           'text-max-width': 6,
           'text-padding': 1,
         },
-        paint: {
-          'text-color': c.park_label,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.park_label, 1.5) },
 
       // ── Named landuse zones ────────────────────────────────────────────────
       { id: 'landuse-label', type: 'symbol',
@@ -359,11 +317,7 @@ export function buildMapStyle(tilesUrl) {
           'text-max-width': 7,
           'text-padding': 1,
         },
-        paint: {
-          'text-color': c.place_suburb,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.place_suburb, 1) },
 
       // ── Neighbourhoods / suburbs / quarters ────────────────────────────────
       // Google Maps philosophy: Regular weight (not Bold), wide letter-spacing,
@@ -384,11 +338,7 @@ export function buildMapStyle(tilesUrl) {
           'text-padding': 0,
           'symbol-sort-key': ['get', 'rank'],
         },
-        paint: {
-          'text-color': c.place_village,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.place_village, 1.5) },
 
       // ── Key landmark POIs — hospitals, universities, stations ──────────────
       { id: 'poi-landmark', type: 'symbol',
@@ -409,11 +359,7 @@ export function buildMapStyle(tilesUrl) {
           'text-padding': 3,
           'text-max-width': 8,
         },
-        paint: {
-          'text-color': c.place_village,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.place_village, 1.5) },
 
       // ── Generic POIs (zoom 15+) ────────────────────────────────────────────
       { id: 'poi-label', type: 'symbol',
@@ -428,11 +374,7 @@ export function buildMapStyle(tilesUrl) {
           'text-offset': [0, 0.3],
           'text-padding': 2,
         },
-        paint: {
-          'text-color': c.place_suburb,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1,
-        } },
+        paint: labelPaint(c.place_suburb, 1) },
 
       // ── Place labels ───────────────────────────────────────────────────────
 
@@ -445,11 +387,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 12,
           'text-font': ['Noto Sans Regular'],
         },
-        paint: {
-          'text-color': c.place_village,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 1.5,
-        } },
+        paint: labelPaint(c.place_village, 1.5) },
 
       { id: 'place-town', type: 'symbol',
         source: 'openmaptiles', 'source-layer': 'place',
@@ -460,11 +398,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': 13,
           'text-font': ['Noto Sans Bold'],
         },
-        paint: {
-          'text-color': c.place_town,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 2,
-        } },
+        paint: labelPaint(c.place_town, 2) },
 
       { id: 'place-city', type: 'symbol',
         source: 'openmaptiles', 'source-layer': 'place',
@@ -474,11 +408,7 @@ export function buildMapStyle(tilesUrl) {
           'text-size': ['interpolate', ['linear'], ['zoom'], 8, 11, 11, 14, 14, 20],
           'text-font': ['Noto Sans Bold'],
         },
-        paint: {
-          'text-color': c.place_city,
-          'text-halo-color': c.label_halo,
-          'text-halo-width': 2,
-        } },
+        paint: labelPaint(c.place_city, 2) },
     ],
   }
 }

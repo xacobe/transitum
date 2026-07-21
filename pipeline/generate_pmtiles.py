@@ -130,15 +130,34 @@ def ensure_osm_pbf(pbf_path: Path, geofabrik_url: str | None, country_slug: str)
     _download(geofabrik_url, pbf_path, f"OSM PBF ({country_slug})")
 
 
-def generate(city: dict, pbf_path: Path) -> bool:
-    import subprocess
+def _tile_setup(city: dict) -> tuple[str, Path, str, int]:
+    """Shared per-city derivations for both the local-Java and Docker tile
+    runs: the slug, the output path (with its parent created), the
+    Planetiler --bounds string, and the minzoom."""
     slug    = city["slug"]
     bbox    = city["tileBbox"]
     minzoom = city.get("tileMinzoom", 11)
     output  = CITY_DATA / slug / "tiles.pmtiles"
     output.parent.mkdir(parents=True, exist_ok=True)
+    bounds  = f"{bbox['minLon']},{bbox['minLat']},{bbox['maxLon']},{bbox['maxLat']}"
+    return slug, output, bounds, minzoom
 
-    bounds = f"{bbox['minLon']},{bbox['minLat']},{bbox['maxLon']},{bbox['maxLat']}"
+
+def _run_planetiler(slug: str, output: Path, cmd: list, label: str) -> bool:
+    """Runs a Planetiler command, reporting failure under `label` or, on
+    success, the resulting tile size. Shared by both run paths."""
+    import subprocess
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        print(f"[{slug}] {label} failed (exit {result.returncode})", file=sys.stderr)
+        return False
+    size_mb = output.stat().st_size / 1e6
+    print(f"[{slug}] done  {size_mb:.1f} MB → {output.name}")
+    return True
+
+
+def generate(city: dict, pbf_path: Path) -> bool:
+    slug, output, bounds, minzoom = _tile_setup(city)
     cmd = [
         "java", "-Xmx4g", "-jar", str(PLANETILER_JAR),
         f"--osm-path={pbf_path}",
@@ -155,26 +174,11 @@ def generate(city: dict, pbf_path: Path) -> bool:
 
     print(f"\n[{slug}] generating tiles  bounds={bounds}")
     print(f"  output → {output}")
-    result = subprocess.run(cmd, check=False)
-
-    if result.returncode != 0:
-        print(f"[{slug}] Planetiler failed (exit {result.returncode})", file=sys.stderr)
-        return False
-
-    size_mb = output.stat().st_size / 1e6
-    print(f"[{slug}] done  {size_mb:.1f} MB → {output.name}")
-    return True
+    return _run_planetiler(slug, output, cmd, "Planetiler")
 
 
 def generate_docker(city: dict, pbf_path: Path) -> bool:
-    import subprocess
-    slug    = city["slug"]
-    bbox    = city["tileBbox"]
-    minzoom = city.get("tileMinzoom", 11)
-    output  = CITY_DATA / slug / "tiles.pmtiles"
-    output.parent.mkdir(parents=True, exist_ok=True)
-
-    bounds      = f"{bbox['minLon']},{bbox['minLat']},{bbox['maxLon']},{bbox['maxLat']}"
+    slug, output, bounds, minzoom = _tile_setup(city)
     sources_dir = TOOLS_DIR / "planetiler-sources"
     sources_dir.mkdir(parents=True, exist_ok=True)
 
@@ -201,15 +205,7 @@ def generate_docker(city: dict, pbf_path: Path) -> bool:
     ]
 
     print(f"\n[{slug}] generating tiles via Docker  bounds={bounds}")
-    result = subprocess.run(cmd, check=False)
-
-    if result.returncode != 0:
-        print(f"[{slug}] Planetiler (Docker) failed (exit {result.returncode})", file=sys.stderr)
-        return False
-
-    size_mb = output.stat().st_size / 1e6
-    print(f"[{slug}] done  {size_mb:.1f} MB → {output.name}")
-    return True
+    return _run_planetiler(slug, output, cmd, "Planetiler (Docker)")
 
 
 def main() -> None:
