@@ -8,6 +8,7 @@ import LineBadge from '@/components/shared/LineBadge.vue'
 import MapStopPanel from '@/components/shared/MapStopPanel.vue'
 import RowActionHint from '@/components/shared/RowActionHint.vue'
 import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
+import ModeIcon from '@/components/shared/ModeIcon.vue'
 import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
 import { useFavoritesStore } from '@/stores/favorites'
@@ -93,6 +94,15 @@ function toggleNearby() {
 }
 
 const filteredRoutes = computed(() => routes.value.filter(matchesFilter))
+
+// List mode groups lines by transit mode, in the same order as the filter
+// bar's chips (availableModes) - each group only shown if it still has
+// routes after the mode filter is applied.
+const groupedRoutes = computed(() =>
+  availableModes.value
+    .map((mode) => ({ mode, routes: filteredRoutes.value.filter((r) => (r.mode ?? 'bus') === mode) }))
+    .filter((group) => group.routes.length > 0),
+)
 
 const stripRoutes = computed(() =>
   nearbyRouteIds.value
@@ -250,31 +260,37 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
       <div class="screen-content sheet pattern-tile-bg">
         <div class="content-inner">
           <p v-if="loading" class="status-text">{{ t('common.loading') }}</p>
-          <ListRow
-            v-for="route in filteredRoutes"
-            :key="routeIdentity(route)"
-            tag="div"
-            @click="onRowClick(route)"
-          >
-            <template #leading>
-              <LineBadge :short-name="route.shortName" :agency-id="route.agencyId" />
-            </template>
-            <span class="line-name">{{ route.longName }}</span>
-            <span v-if="hasMultipleAgencies" class="line-agency">{{ route.agencyName }}</span>
-            <template #trailing>
-              <button
-                type="button"
-                class="fav-btn"
-                :class="{ saved: favorites.isFavoriteLine(route.agencyId, route.shortName, city.activeSlug) }"
-                :aria-label="t('common.favorite')"
-                @click.stop="toggleFavorite(route)"
-              >
-                <IconStarFilled v-if="favorites.isFavoriteLine(route.agencyId, route.shortName, city.activeSlug)" :size="16" />
-                <IconStar v-else :size="16" />
-              </button>
-              <RowActionHint :label="t('common.viewLine')" />
-            </template>
-          </ListRow>
+          <template v-for="group in groupedRoutes" :key="group.mode">
+            <div class="mode-group-header">
+              <ModeIcon :mode="group.mode" :size="18" :style="{ color: `var(--color-mode-${group.mode})` }" />
+              <span class="mode-group-title">{{ t(`modes.${group.mode}`) }}</span>
+            </div>
+            <ListRow
+              v-for="route in group.routes"
+              :key="routeIdentity(route)"
+              tag="div"
+              @click="onRowClick(route)"
+            >
+              <template #leading>
+                <LineBadge :short-name="route.shortName" :agency-id="route.agencyId" />
+              </template>
+              <span class="line-name">{{ route.longName }}</span>
+              <span v-if="hasMultipleAgencies" class="line-agency">{{ route.agencyName }}</span>
+              <template #trailing>
+                <button
+                  type="button"
+                  class="fav-btn"
+                  :class="{ saved: favorites.isFavoriteLine(route.agencyId, route.shortName, city.activeSlug) }"
+                  :aria-label="t('common.favorite')"
+                  @click.stop="toggleFavorite(route)"
+                >
+                  <IconStarFilled v-if="favorites.isFavoriteLine(route.agencyId, route.shortName, city.activeSlug)" :size="16" />
+                  <IconStar v-else :size="16" />
+                </button>
+                <RowActionHint :label="t('common.viewLine')" />
+              </template>
+            </ListRow>
+          </template>
         </div>
       </div>
     </template>
@@ -355,5 +371,20 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
   margin-top: 2px;
 }
 
+.mode-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0 8px;
+}
 
+.mode-group-header:first-child {
+  padding-top: 6px;
+}
+
+.mode-group-title {
+  font: var(--text-body);
+  font-weight: 800;
+  color: var(--color-text);
+}
 </style>

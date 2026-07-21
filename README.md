@@ -13,7 +13,7 @@ Designed for the constraints of low-connectivity deployments: 2G/3G connections,
 ## Features
 
 - **Nearby stops** — closest bus stops on an interactive map and in a list view
-- **Route planning** — multi-leg itineraries with walking segments, up to 5 Pareto-optimal alternatives
+- **Route planning** — multi-leg itineraries with walking segments, up to 5 Pareto-optimal alternatives; advanced search for a specific date/time, weekday-aware (Mon-Fri/Saturday/Sunday) both online and offline
 - **Line browser** — full line list with route map and stop timeline for each direction
 - **Offline mode** — city pack (vector map tiles, routing binaries, stop list, POIs) works fully offline after first load
 - **Real or estimated timetables** — actual next-departure times where a schedule is published, a frequency estimate otherwise, per line

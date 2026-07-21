@@ -4,6 +4,7 @@ official feeds combined into one city, see its own docstring).
 """
 import csv
 import zipfile
+from pathlib import Path
 
 # Every GTFS text file either import script might touch. Order matters for
 # import_gtfs.py's re-zip step (cosmetic - GTFS readers don't care), not for
@@ -13,6 +14,24 @@ GTFS_FILES = [
     "calendar.txt", "calendar_dates.txt", "shapes.txt", "fare_attributes.txt",
     "fare_rules.txt", "frequencies.txt", "transfers.txt", "feed_info.txt",
 ]
+
+
+def safe_extract_zip(zf: zipfile.ZipFile, dest) -> None:
+    """Extracts every member of `zf` into `dest`, rejecting any entry whose
+    resolved path would land outside `dest` (a "Zip Slip" path-traversal
+    archive using ../ segments or an absolute path). GTFS zips are fetched
+    from remote, operator-controlled URLs, so a malicious or malformed feed
+    must not be able to write arbitrary files on the machine running the
+    pipeline. Use this instead of ZipFile.extractall() anywhere the archive
+    isn't produced by this pipeline itself."""
+    dest_root = Path(dest).resolve()
+    for member in zf.namelist():
+        target = (dest_root / member).resolve()
+        if target != dest_root and dest_root not in target.parents:
+            raise ValueError(
+                f"Refusing to extract unsafe zip entry outside the destination: {member!r}"
+            )
+    zf.extractall(dest_root)
 
 
 def read_csv_rows(path) -> list[dict]:

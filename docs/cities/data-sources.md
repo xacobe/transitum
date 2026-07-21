@@ -36,7 +36,7 @@ a few minutes for a large city. Under the hood, this runs, in order:
 2. `pipeline/gtfs_routes_to_json.py` — GTFS + OSM → `data/cities/<city>/routes.json`
 3. `pipeline/gtfs_stops_to_json.py` — GTFS stops → `data/cities/<city>/stops.json`
 4. `pipeline/osm_to_pois.py` — OSM Overpass → `data/cities/<city>/pois.json`
-5. `npm run generate-transit-data` — GTFS → `timetable.bin` + `stops.bin`
+5. `npm run generate-transit-data` — GTFS → `timetable.<hash>.bin` (one per weekday pattern) + `stops.bin`
 
 Steps 2–5 are shared with the official-GTFS path below (exposed on their
 own as `make data-common CITY=<city>`) — everything downstream of the raw

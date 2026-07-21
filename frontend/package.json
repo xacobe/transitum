@@ -8,6 +8,9 @@
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "generate-transit-data": "node ../pipeline/generate_transit_data.mjs"
   },
   "dependencies": {
@@ -28,9 +31,12 @@
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^11.2.4",
     "@vitejs/plugin-vue": "^6.0.7",
+    "@vitest/coverage-v8": "4.1.10",
+    "jsdom": "29.1.1",
     "sharp": "^0.35.3",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
+    "vitest": "4.1.10",
     "vue-tsc": "^3.3.6"
   }
 }

@@ -42,7 +42,7 @@ sources don't happen to need).
 
 ### Why this example ships `tiles.pmtiles`
 
-`timetable.bin`, `stops.bin`, and `tiles.pmtiles` are normally gitignored
+`timetable.<hash>.bin`, `patterns.json`, `stops.bin`, and `tiles.pmtiles` are normally gitignored
 and regenerated locally — reproducible from versioned source data, not
 worth committing for a live city. An example is different: it's already a
 point-in-time snapshot by design, same as the GTFS it ships (schedules will

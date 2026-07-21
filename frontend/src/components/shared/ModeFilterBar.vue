@@ -21,6 +21,7 @@ const { t } = useI18n()
       type="button"
       class="mode-chip"
       :class="{ active: isActive(mode) }"
+      :style="{ '--chip-color': `var(--color-mode-${mode})` }"
       :aria-pressed="isActive(mode)"
       @click="emit('toggle', mode)"
     >
@@ -52,7 +53,10 @@ const { t } = useI18n()
   padding: 6px 14px;
   border-radius: var(--radius-full);
   background: var(--color-chip-bg);
-  color: var(--color-text);
+  /* Icon + label tinted by mode (--chip-color, set per-chip inline - see
+     styles/tokens.css's --color-mode-*) so each mode reads at a glance,
+     consistent with the map's per-mode stop markers (map/stopIcon.ts). */
+  color: var(--chip-color);
   font: var(--text-caption-sm);
   font-weight: 700;
   white-space: nowrap;
@@ -64,7 +68,7 @@ const { t } = useI18n()
 }
 
 .mode-chip.active {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
+  background: var(--chip-color);
+  color: #fff;
 }
 </style>
