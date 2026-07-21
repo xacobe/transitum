@@ -13,6 +13,7 @@ import ferrySvg       from '@tabler/icons/outline/ferry.svg?raw'
 import aerialLiftSvg  from '@tabler/icons/outline/aerial-lift.svg?raw'
 import mountainSvg    from '@tabler/icons/outline/mountain.svg?raw'
 import { METRO_ICON_INNER_SVG, TRAM_ICON_INNER_SVG } from '@/services/modeIconSvg'
+import { cssVar } from '@/map/geometry'
 import type { TransitMode } from '@/types'
 
 const SVG_OPEN =
@@ -34,6 +35,26 @@ const MODE_SVG: Record<TransitMode, string> = {
   funicular: mountainSvg,
   metro: `${SVG_OPEN}${METRO_ICON_INNER_SVG}</svg>`,
   tram: `${SVG_OPEN}${TRAM_ICON_INNER_SVG}</svg>`,
+}
+
+// CSS custom property per TransitMode (see styles/tokens.css) - the single
+// source of truth for "what color is this mode," shared by the map sprites
+// below and ModeFilterBar.vue's chip styling.
+const MODE_COLOR_VAR: Record<TransitMode, string> = {
+  bus: '--color-mode-bus',
+  trolleybus: '--color-mode-trolleybus',
+  rail: '--color-mode-rail',
+  monorail: '--color-mode-monorail',
+  ferry: '--color-mode-ferry',
+  aerial_lift: '--color-mode-aerial_lift',
+  cable_tram: '--color-mode-cable_tram',
+  funicular: '--color-mode-funicular',
+  metro: '--color-mode-metro',
+  tram: '--color-mode-tram',
+}
+
+export function modeColor(mode: TransitMode): string {
+  return cssVar(MODE_COLOR_VAR[mode])
 }
 
 export async function drawStopIcon(
