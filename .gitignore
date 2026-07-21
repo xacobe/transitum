@@ -9,8 +9,10 @@ __pycache__/
 /data/.cache/*.gtfs.zip
 /archive/
 
-# Minotor routing binaries (regenerated with node pipeline/generate_transit_data.mjs)
+# Minotor routing binaries + the weekday pattern manifest that indexes them
+# (regenerated with node pipeline/generate_transit_data.mjs)
 /data/cities/*/*.bin
+/data/cities/*/patterns.json
 
 # Dependencies and build outputs (reproducible via npm install / npm run build)
 # npm workspaces (root package.json: frontend + pipeline) hoist shared deps
@@ -19,6 +21,7 @@ __pycache__/
 /node_modules/
 /frontend/dist/
 /frontend/dev-dist/
+/frontend/coverage/
 /services/routing/node_modules/
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
