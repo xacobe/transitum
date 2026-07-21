@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Transitum
   text: Progressive web app framework for public transit
-  tagline: Answers two questions — "which bus stops near me?" and "how do I get from A to B?" — for any city, from OSM tags or a real GTFS feed.
+  tagline: Explore and navigate a city's transit network — nearby stops, line maps, multi-leg trip planning — offline and tuned to run on 2G/3G connections and low-end phones.
   actions:
     - theme: brand
       text: Get started

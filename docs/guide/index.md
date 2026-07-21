@@ -1,8 +1,9 @@
 # Introduction
 
 Transitum is a progressive web app framework for public transit, designed
-to answer two questions for any city: **"which bus stops near me?"** and
-**"how do I get from A to B?"**
+to let people explore and navigate a city's transit network — nearby stops,
+line maps, multi-leg trip planning — offline and tuned to run on 2G/3G
+connections and low-end phones.
 
 It ships with no city pre-configured — `config/cities/` is empty by default.
 Adding a real city is a data task, not a code change: point the pipeline at
