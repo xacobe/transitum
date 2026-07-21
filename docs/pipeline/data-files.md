@@ -9,11 +9,12 @@ Each city produces, under `data/cities/<slug>/`:
 | `routes-meta.json` | Line metadata, no geometry (stop panels) | Yes |
 | `pois.json` | Named places with a tier field | Yes |
 | `version.json` | Data version stamp (cache invalidation) | Yes |
-| `timetable.bin` | Minotor routing binary | No — regenerate locally |
+| `patterns.json` | Weekday → Minotor timetable pattern map (see [Offline architecture](/guide/offline-architecture)) | No — regenerate locally |
+| `timetable.<hash>.bin` | Minotor routing binary, one per distinct weekday service pattern | No — regenerate locally |
 | `stops.bin` | Minotor stops binary | No — regenerate locally |
 | `tiles.pmtiles` | Vector map tiles | No — regenerate locally |
 
-The three gitignored binary files are all reproducible from the versioned
+The gitignored binary/manifest files are all reproducible from the versioned
 GTFS source (`data/gtfs/<country>/<city>/` for OSM-synthetic cities,
 `data/.cache/<slug>.gtfs.zip` for official-GTFS ones) via
 `make data-common CITY=<slug>` and `make tiles CITY=<slug>`.

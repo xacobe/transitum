@@ -303,10 +303,26 @@ export interface RoutingParams {
   toLat: number
   toLon: number
   time: string
+  // "YYYY-MM-DD" - which calendar-pattern to route against (see
+  // PatternsManifest). Omitted/null means "today".
+  date?: string | null
   fromName?: string | null
   toName?: string | null
   // Restricts routing to these TransitMode values; null/omitted means every
   // mode (see routeTypesForModes in services/routing/minotorHelpers.js,
   // shared by both the offline and server routing paths).
   transportModes?: TransitMode[] | null
+}
+
+// data/cities/<slug>/patterns.json, written by pipeline/generate_transit_data.mjs.
+// Maps each weekday to the content-hash of the Minotor timetable binary that
+// models it (cities with a single always-on service, e.g. every OSM-synthetic
+// city, collapse to one hash for all seven days).
+export interface PatternsManifest {
+  weekdayToPattern: Record<'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat', string>
+  validFrom: string | null
+  validUntil: string | null
+  // Dates with a calendar_dates.txt override not reflected in the weekday
+  // patterns above - routing for these dates needs a live connection.
+  exceptionDates: string[]
 }

@@ -17,7 +17,7 @@ import { useLineColor } from '@/composables/useLineColor'
 import { buildMapStyle } from '@/map/style'
 import { type LatLon, toLngLat, pointsToCoords, latLonArrayToBounds, cssVar } from '@/map/geometry'
 import { resolveTileUrl } from '@/map/tileSource'
-import { drawStopIcon } from '@/map/stopIcon'
+import { drawStopIcon, modeColor } from '@/map/stopIcon'
 import { pickStopIconMode } from '@/services/modeIconSvg'
 import {
   pulsingDotElement, pinElement, solidDotElement, originFlagElement, busStopElement,
@@ -119,9 +119,12 @@ async function loadStopIcons() {
   if (stopIconsPromise) { await stopIconsPromise; return }
 
   stopIconsPromise = (async () => {
-    // 2× canvas for crisp rendering on retina displays.
+    // 2× canvas for crisp rendering on retina displays. Each mode gets its
+    // own identity color (see map/stopIcon.ts's MODE_COLOR_VAR /
+    // styles/tokens.css's --color-mode-*) so bus/metro/tram/... stops are
+    // visually distinguishable at a glance in search mode.
     await Promise.all(ALL_TRANSIT_MODES.map(async (mode) => {
-      const imageData = await drawStopIcon(68, stopColor(), 4, mode)  // logical 34px × 2
+      const imageData = await drawStopIcon(68, modeColor(mode), 4, mode)  // logical 34px × 2
       if (map && !map.hasImage(stopIconImg(mode))) {
         map.addImage(stopIconImg(mode), imageData, { pixelRatio: 2 })
       }
@@ -497,7 +500,9 @@ async function onStyleReady() {
   if (!map) return
   styleReady = true
   await Promise.all([loadStopIcons(), loadNearbyStopIcon()])
-  initOverlayLayers(map, stopColor())
+  // Clusters mix stops of potentially several modes, so they use the app's
+  // general accent color rather than any one mode's color.
+  initOverlayLayers(map, cssVar('--color-accent'))
   if (!overlayHandlersRegistered) {
     overlayHandlersRegistered = true
     registerOverlayHandlers(map, (stop) => emit('stop-click', stop))

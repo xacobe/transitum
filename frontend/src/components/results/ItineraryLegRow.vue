@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import LineBadge from '@/components/shared/LineBadge.vue'
-import { useAgencies, agencyIdFromGtfsId } from '@/composables/useAgencies'
+import { useLeg } from '@/composables/useLeg'
 import { IconWalk, IconArrowsLeftRight, IconBus } from '@tabler/icons-vue'
-import { formatDuration, formatTime } from '@/services/format'
-import type { Leg, BusLeg } from '@/types'
+import type { Leg } from '@/types'
 
 const props = defineProps<{
   leg: Leg
@@ -16,15 +14,7 @@ const props = defineProps<{
   hasFixedSchedule?: boolean
 }>()
 
-const { hasMultipleAgencies } = useAgencies()
-const duration = computed(() => formatDuration(props.leg.duration))
-const departureTime = computed(() =>
-  props.leg.mode === 'BUS' ? formatTime((props.leg as BusLeg).startTime) : '',
-)
-const agencyId = computed(() => {
-  if (props.leg.mode !== 'BUS') return undefined
-  return agencyIdFromGtfsId((props.leg as BusLeg).agency?.gtfsId) ?? undefined
-})
+const { duration, departureTime, agencyId, hasMultipleAgencies } = useLeg(() => props.leg)
 </script>
 
 <template>

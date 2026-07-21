@@ -15,7 +15,7 @@ filenames under `config/cities/` (minus `.json`).
 | `gtfs_routes_to_json.py` | GTFS + OSM shapes → `routes.json` / `routes-meta.json` — line geometries, stops, frequency |
 | `gtfs_stops_to_json.py` | GTFS stops → `stops.json` |
 | `osm_to_pois.py` | OSM Overpass → `pois.json` |
-| `generate_transit_data.mjs` | GTFS zip → Minotor routing binaries (`timetable.bin`, `stops.bin`) |
+| `generate_transit_data.mjs` | GTFS zip → Minotor routing binaries, one `timetable.<hash>.bin` per distinct weekday service pattern (`patterns.json`), plus `stops.bin` |
 | `generate_pmtiles.py` | OSM PBF → `tiles.pmtiles` (Planetiler; see [Generating map tiles](/cities/map-tiles)) |
 | `check_osm_routes.py` | CI: detects OSM route changes since last sync |
 | `cities.py` | Shared path utilities + city registry loader |

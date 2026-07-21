@@ -46,7 +46,11 @@
     "placeholderDestination": "Où allez-vous ?",
     "searching": "Recherche…",
     "noResults": "Aucun résultat.",
-    "hint": "Tapez le nom d'un lieu ou d'un arrêt."
+    "hint": "Tapez le nom d'un lieu ou d'un arrêt.",
+    "advancedSearch": "Recherche avancée",
+    "date": "Date",
+    "time": "Heure",
+    "needsConnection": "Cette date peut avoir des horaires différents — connectez-vous pour vérifier."
   },
   "results": {
     "title": "{n} itinéraire | {n} itinéraires",

@@ -46,7 +46,11 @@
     "placeholderDestination": "Where to?",
     "searching": "Searching…",
     "noResults": "No results.",
-    "hint": "Type the name of a place or stop."
+    "hint": "Type the name of a place or stop.",
+    "advancedSearch": "Advanced search",
+    "date": "Date",
+    "time": "Time",
+    "needsConnection": "This date may have a different schedule — connect to check."
   },
   "results": {
     "title": "{n} itinerary | {n} itineraries",
