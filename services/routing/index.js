@@ -30,6 +30,15 @@ for (const slug of CITY_SLUGS) {
     console.error(`  ✗ ${slug}: ${err.message}`)
   }
 }
+
+// Cities were configured but none could be loaded - every routing request
+// would fail with "Unknown city". Fail fast rather than come up "Ready" and
+// silently serve nothing (an empty CITY_SLUGS is the legitimate ship-empty
+// default and is left to start normally).
+if (CITY_SLUGS.length && cities.size === 0) {
+  console.error(`No city data could be loaded from ${DATA_DIR} for: ${CITY_SLUGS.join(', ')}`)
+  process.exit(1)
+}
 console.log('Ready.')
 
 const MAX_BODY = 65_536 // 64 KB — routing requests are small JSON objects
