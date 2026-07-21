@@ -19,6 +19,7 @@ __pycache__/
 /node_modules/
 /frontend/dist/
 /frontend/dev-dist/
+/frontend/coverage/
 /services/routing/node_modules/
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
