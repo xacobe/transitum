@@ -64,3 +64,9 @@ jobs:
 
       - name: Check pipeline scripts compile
         run: python -m compileall pipeline/ -q
+
+      - name: Install test dependencies
+        run: pip install -r pipeline/requirements-dev.txt
+
+      - name: Run pipeline unit tests
+        run: pytest pipeline/tests
