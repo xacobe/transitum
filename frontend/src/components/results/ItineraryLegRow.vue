@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import LineBadge from '@/components/shared/LineBadge.vue'
 import { useLeg } from '@/composables/useLeg'
+import { useNavigation } from '@/composables/useNavigation'
 import { IconWalk, IconArrowsLeftRight, IconBus } from '@tabler/icons-vue'
 import type { Leg } from '@/types'
 
@@ -15,11 +17,20 @@ const props = defineProps<{
 }>()
 
 const { duration, departureTime, agencyId, hasMultipleAgencies } = useLeg(() => props.leg)
+const { openLine } = useNavigation()
+const { t } = useI18n()
 </script>
 
 <template>
   <div v-if="leg.mode === 'BUS'" class="leg-row">
-    <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="32" />
+    <button
+      type="button"
+      class="badge-btn"
+      :aria-label="t('common.viewLine')"
+      @click.stop="openLine(leg.route?.shortName ?? '')"
+    >
+      <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="32" />
+    </button>
     <div class="leg-info">
       <div v-if="leg.headsign" class="leg-headsign">→ {{ leg.headsign }}</div>
       <div v-if="hasMultipleAgencies" class="leg-agency">{{ leg.agency?.name }}</div>
@@ -60,6 +71,11 @@ const { duration, departureTime, agencyId, hasMultipleAgencies } = useLeg(() => 
 }
 
 .leg-icon {
+  display: flex;
+  flex: none;
+}
+
+.badge-btn {
   display: flex;
   flex: none;
 }

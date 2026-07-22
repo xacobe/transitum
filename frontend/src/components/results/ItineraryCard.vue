@@ -170,6 +170,7 @@ function toggleFavorite() {
           :leg="leg"
           :is-transfer="leg.mode === 'WALK' && i > 0 && i < itinerary.legs.length - 1"
           :has-fixed-schedule="leg.mode === 'BUS' && fixedScheduleLines.has(leg.route.shortName)"
+          :badge-clickable="selected"
         />
         <span v-if="i < itinerary.legs.length - 1" class="sep-wrap">
           <IconChevronRight :size="14" aria-hidden="true" />
@@ -196,6 +197,9 @@ function toggleFavorite() {
   border-color: var(--color-accent);
   border-width: 2px;
   padding: 13px 14px 14px;
+  /* Clicking an already-selected card has no effect (it's already showing
+     its expanded state) - don't invite a click that does nothing. */
+  cursor: default;
 }
 
 .ribbon {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import LineBadge from '@/components/shared/LineBadge.vue'
 import { useLeg } from '@/composables/useLeg'
+import { useNavigation } from '@/composables/useNavigation'
 import { IconWalk, IconArrowsLeftRight, IconBus, IconChevronRight } from '@tabler/icons-vue'
 import type { Leg } from '@/types'
 
@@ -15,14 +17,30 @@ const props = defineProps<{
   // When true, the line chip shows the time instead of the ride duration,
   // and a second small chip (bus icon) carries the duration instead.
   hasFixedSchedule?: boolean
+  // Only the selected card's badge navigates to the line view - see
+  // ItineraryCard.vue, which passes its own `selected` prop through here
+  // (LegChip is also used for every non-selected card in the results list,
+  // where a stray tap shouldn't jump away from the itinerary being compared).
+  badgeClickable?: boolean
 }>()
 
 const { duration, departureTime, agencyId, hasMultipleAgencies } = useLeg(() => props.leg)
+const { openLine } = useNavigation()
+const { t } = useI18n()
 </script>
 
 <template>
   <span v-if="leg.mode === 'BUS'" class="chip bus-chip">
-    <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="28" />
+    <button
+      v-if="badgeClickable"
+      type="button"
+      class="badge-btn"
+      :aria-label="t('common.viewLine')"
+      @click.stop="openLine(leg.route?.shortName ?? '')"
+    >
+      <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="28" />
+    </button>
+    <LineBadge v-else :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="28" />
     <span v-if="hasFixedSchedule" class="chip-label chip-label--time">{{ departureTime }}</span>
     <span v-else class="chip-label">{{ duration }}</span>
     <span v-if="hasMultipleAgencies" class="line-agency">{{ leg.agency?.name }}</span>
@@ -50,6 +68,11 @@ const { duration, departureTime, agencyId, hasMultipleAgencies } = useLeg(() => 
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  flex: none;
+}
+
+.badge-btn {
+  display: flex;
   flex: none;
 }
 
