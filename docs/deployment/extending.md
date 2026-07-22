@@ -21,6 +21,7 @@ It exports one `defineCustomization({ ... })` call (see
 | Field | Adds |
 |---|---|
 | `routes` | Extra Vue Router routes, appended after the framework's own. Use lazy components (`() => import(...)`) — this module is bundled into the entry chunk. |
+| `routePaths` | Overrides a framework route's URL path (`{ home: '/carte', settings: '/reglages', stop: '/arret/:stopId', ... }` — see `FrameworkRouteName` for the full list of overridable names). The framework's own paths are plain English with no built-in translation — route *names* never change, so this is the only thing to touch if your deployment's primary language isn't English. Keep a route's `:param` segment if it has one. |
 | `navItems` | Extra bottom-nav items, appended after the framework's 4. One extra item fits comfortably; more gets cramped on narrow screens. |
 | `install(app)` | Runs once, after Pinia/router/i18n are installed and before the framework's own stores initialize — register extra Pinia plugins/stores or `mergeLocaleMessage()` here. |
 | `analytics` | An extra sink that receives every `track()` call alongside Umami. To fully replace Umami, also leave `VITE_ANALYTICS_URL`/`VITE_ANALYTICS_WEBSITE_ID` empty. |

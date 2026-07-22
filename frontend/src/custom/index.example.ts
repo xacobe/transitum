@@ -23,6 +23,20 @@ export default defineCustomization({
     },
   ],
 
+  // The framework's own URL paths (/map, /search, /stop/:stopId, ...) are
+  // plain English regardless of VITE_DEFAULT_LOCALE - override any of them
+  // here if your deployment's primary language isn't English. Route names
+  // never change, so nothing else in the app needs updating. Keep a
+  // route's :param segment if it has one (see FrameworkRouteName's list in
+  // customization/contract.ts).
+  // routePaths: {
+  //   home: '/carte',
+  //   search: '/recherche',
+  //   stop: '/arret/:stopId',
+  //   settings: '/reglages',
+  //   help: '/aide',
+  // },
+
   navItems: [
     {
       to: '/about',

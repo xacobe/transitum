@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ListHomeView from '@/views/ListHomeView.vue'
 import { customization } from '@/customization'
+import type { FrameworkRouteName } from '@/customization'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -11,34 +12,43 @@ declare module 'vue-router' {
 
 const SearchView = () => import('@/views/DestinationSearchView.vue')
 
+// The framework's own paths are plain English - a deployment whose primary
+// language isn't English can override any of them via customization's
+// routePaths (see contract.ts) instead of forking this file. Route *names*
+// never change, so in-app navigation (which always goes through named
+// routes) needs no other changes when a path is overridden.
+function p(name: FrameworkRouteName, fallback: string): string {
+  return customization.routePaths[name] ?? fallback
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/map', name: 'home', component: () => import('@/views/HomeView.vue') },
+    { path: p('home', '/map'), name: 'home', component: () => import('@/views/HomeView.vue') },
     {
-      path: '/search', name: 'search', component: SearchView,
+      path: p('search', '/search'), name: 'search', component: SearchView,
       meta: { homeRouteName: 'home', resultsRouteName: 'mapResults' },
     },
-    { path: '/results', name: 'mapResults', component: () => import('@/views/MapResultsView.vue') },
-    { path: '/stop/:stopId', name: 'stop', component: () => import('@/views/StopView.vue') },
+    { path: p('mapResults', '/results'), name: 'mapResults', component: () => import('@/views/MapResultsView.vue') },
+    { path: p('stop', '/stop/:stopId'), name: 'stop', component: () => import('@/views/StopView.vue') },
     // List is the app's entry screen — statically imported so it renders
     // on first paint without an extra dynamic-import round-trip.
-    { path: '/', name: 'list', component: ListHomeView },
+    { path: p('list', '/'), name: 'list', component: ListHomeView },
     {
-      path: '/list/search', name: 'listSearch', component: SearchView,
+      path: p('listSearch', '/list/search'), name: 'listSearch', component: SearchView,
       meta: { homeRouteName: 'list', resultsRouteName: 'listResults' },
     },
-    { path: '/list/results', name: 'listResults', component: () => import('@/views/ListResultsView.vue') },
-    { path: '/lines', name: 'lines', component: () => import('@/views/LinesView.vue') },
-    { path: '/lines/:shortName', name: 'line', component: () => import('@/views/LineView.vue') },
-    { path: '/favorites', name: 'favorites', component: () => import('@/views/FavorisView.vue') },
-    { path: '/settings', name: 'settings', component: () => import('@/views/SettingsView.vue') },
-    { path: '/help', name: 'help', component: () => import('@/views/HelpView.vue') },
+    { path: p('listResults', '/list/results'), name: 'listResults', component: () => import('@/views/ListResultsView.vue') },
+    { path: p('lines', '/lines'), name: 'lines', component: () => import('@/views/LinesView.vue') },
+    { path: p('line', '/lines/:shortName'), name: 'line', component: () => import('@/views/LineView.vue') },
+    { path: p('favorites', '/favorites'), name: 'favorites', component: () => import('@/views/FavorisView.vue') },
+    { path: p('settings', '/settings'), name: 'settings', component: () => import('@/views/SettingsView.vue') },
+    { path: p('help', '/help'), name: 'help', component: () => import('@/views/HelpView.vue') },
     // Not linked from anywhere in the nav - reference page for the
     // design system (tokens + live components), reachable only by URL.
-    { path: '/styleguide', name: 'styleguide', component: () => import('@/views/StyleguideView.vue') },
+    { path: p('styleguide', '/styleguide'), name: 'styleguide', component: () => import('@/views/StyleguideView.vue') },
     // Admin panel - URL-only, protected by PocketBase admin auth.
-    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue') },
+    { path: p('admin', '/admin'), name: 'admin', component: () => import('@/views/AdminView.vue') },
   ],
 })
 

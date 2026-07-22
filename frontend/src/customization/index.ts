@@ -1,7 +1,7 @@
 import type { DeploymentCustomization } from './contract'
 
 export { defineCustomization } from './contract'
-export type { DeploymentCustomization, CustomNavItem, ReportPayload } from './contract'
+export type { DeploymentCustomization, CustomNavItem, ReportPayload, FrameworkRouteName } from './contract'
 
 // Matches frontend/src/custom/index.ts if this deployment has one; matches
 // nothing (not an error) otherwise. Eager: resolved at build time so route
@@ -27,6 +27,7 @@ if (import.meta.env.DEV && loaded) {
 
 export const customization = {
   routes: loaded?.routes ?? [],
+  routePaths: loaded?.routePaths ?? {},
   navItems: loaded?.navItems ?? [],
   install: loaded?.install,
   analytics: loaded?.analytics,

@@ -11,6 +11,13 @@ export interface ReportPayload {
   contact_email?: string
 }
 
+/** Every route name the framework itself defines (frontend/src/router/index.ts) - the keys `routePaths` can override. */
+export type FrameworkRouteName =
+  | 'home' | 'search' | 'mapResults' | 'stop'
+  | 'list' | 'listSearch' | 'listResults'
+  | 'lines' | 'line' | 'favorites' | 'settings' | 'help'
+  | 'styleguide' | 'admin'
+
 export interface CustomNavItem {
   /** Route path to link to, e.g. '/schedules'. */
   to: string
@@ -31,6 +38,18 @@ export interface DeploymentCustomization {
   version: 1
   /** Appended after the framework's own routes. Use lazy components (`() => import(...)`) - this module is eagerly bundled into the entry chunk. */
   routes?: RouteRecordRaw[]
+  /**
+   * Overrides a framework route's URL path (route *names* never change, so
+   * in-app navigation - which always goes through named routes - needs no
+   * other changes). The framework's own paths are plain English
+   * (`/map`, `/search`, `/stop/:stopId`, ...) regardless of VITE_DEFAULT_LOCALE
+   * - there's no built-in translation to fall back to, so a deployment
+   * whose primary language isn't English supplies its own strings here, the
+   * same way `CustomNavItem.label` does for nav text. Keep any `:param`
+   * segment the framework's own path has (see FrameworkRouteName's route
+   * list) - e.g. `{ stop: '/arret/:stopId' }`, not `{ stop: '/arret' }`.
+   */
+  routePaths?: Partial<Record<FrameworkRouteName, string>>
   /** Appended after the framework's 4 bottom-nav items. One extra item fits comfortably; more gets cramped on narrow screens. */
   navItems?: CustomNavItem[]
   /** Runs once, after Pinia/router/i18n are installed and before the framework's own stores are initialized. Register extra Pinia stores, plugins, or i18n messages here. Must be synchronous. */
