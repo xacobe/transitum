@@ -32,15 +32,15 @@ function labelOf(label: CustomNavItem['label']): string {
         <IconList class="icon" :size="22" aria-hidden="true" />
         <span class="label">{{ t('nav.list') }}</span>
       </RouterLink>
-      <RouterLink to="/carte" class="nav-item" :class="{ active: isActive('home', 'search', 'mapResults') }">
+      <RouterLink :to="{ name: 'home' }" class="nav-item" :class="{ active: isActive('home', 'search', 'mapResults') }">
         <IconMap class="icon" :size="22" aria-hidden="true" />
         <span class="label">{{ t('nav.map') }}</span>
       </RouterLink>
-      <RouterLink to="/lines" class="nav-item" :class="{ active: isActive('lines', 'line') }">
+      <RouterLink :to="{ name: 'lines' }" class="nav-item" :class="{ active: isActive('lines', 'line') }">
         <IconBus class="icon" :size="22" aria-hidden="true" />
         <span class="label">{{ t('nav.lines') }}</span>
       </RouterLink>
-      <RouterLink to="/favorites" class="nav-item" :class="{ active: isActive('favorites') }">
+      <RouterLink :to="{ name: 'favorites' }" class="nav-item" :class="{ active: isActive('favorites') }">
         <IconStar class="icon" :size="22" aria-hidden="true" />
         <span class="label">{{ t('nav.favorites') }}</span>
       </RouterLink>

@@ -14,31 +14,31 @@ const SearchView = () => import('@/views/DestinationSearchView.vue')
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/carte', name: 'home', component: () => import('@/views/HomeView.vue') },
+    { path: '/map', name: 'home', component: () => import('@/views/HomeView.vue') },
     {
-      path: '/recherche', name: 'search', component: SearchView,
+      path: '/search', name: 'search', component: SearchView,
       meta: { homeRouteName: 'home', resultsRouteName: 'mapResults' },
     },
-    { path: '/resultats', name: 'mapResults', component: () => import('@/views/MapResultsView.vue') },
-    { path: '/arret/:stopId', name: 'stop', component: () => import('@/views/StopView.vue') },
-    // Liste is the app's entry screen — statically imported so it renders
+    { path: '/results', name: 'mapResults', component: () => import('@/views/MapResultsView.vue') },
+    { path: '/stop/:stopId', name: 'stop', component: () => import('@/views/StopView.vue') },
+    // List is the app's entry screen — statically imported so it renders
     // on first paint without an extra dynamic-import round-trip.
     { path: '/', name: 'list', component: ListHomeView },
     {
-      path: '/liste/recherche', name: 'listSearch', component: SearchView,
+      path: '/list/search', name: 'listSearch', component: SearchView,
       meta: { homeRouteName: 'list', resultsRouteName: 'listResults' },
     },
-    { path: '/liste/resultats', name: 'listResults', component: () => import('@/views/ListResultsView.vue') },
+    { path: '/list/results', name: 'listResults', component: () => import('@/views/ListResultsView.vue') },
     { path: '/lines', name: 'lines', component: () => import('@/views/LinesView.vue') },
     { path: '/lines/:shortName', name: 'line', component: () => import('@/views/LineView.vue') },
     { path: '/favorites', name: 'favorites', component: () => import('@/views/FavorisView.vue') },
-    { path: '/reglages', name: 'settings', component: () => import('@/views/SettingsView.vue') },
-    { path: '/aide', name: 'help', component: () => import('@/views/HelpView.vue') },
+    { path: '/settings', name: 'settings', component: () => import('@/views/SettingsView.vue') },
+    { path: '/help', name: 'help', component: () => import('@/views/HelpView.vue') },
     // Not linked from anywhere in the nav - reference page for the
     // design system (tokens + live components), reachable only by URL.
     { path: '/styleguide', name: 'styleguide', component: () => import('@/views/StyleguideView.vue') },
     // Admin panel - URL-only, protected by PocketBase admin auth.
-    { path: '/administro', name: 'admin', component: () => import('@/views/AdminView.vue') },
+    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue') },
   ],
 })
 

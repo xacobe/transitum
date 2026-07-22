@@ -13,8 +13,8 @@ interface DestinationSearchScreenOptions {
 }
 
 /**
- * Shared destination-search screen logic for the Carte (/recherche) and
- * Liste (/liste/recherche) variants: same input/cascade behavior, only the
+ * Shared destination-search screen logic for the Map (/search) and
+ * List (/list/search) variants: same input/cascade behavior, only the
  * target route names differ.
  *
  * Both origin and destination are shown and editable at once. Tapping a

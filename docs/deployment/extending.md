@@ -24,7 +24,7 @@ It exports one `defineCustomization({ ... })` call (see
 | `navItems` | Extra bottom-nav items, appended after the framework's 4. One extra item fits comfortably; more gets cramped on narrow screens. |
 | `install(app)` | Runs once, after Pinia/router/i18n are installed and before the framework's own stores initialize — register extra Pinia plugins/stores or `mergeLocaleMessage()` here. |
 | `analytics` | An extra sink that receives every `track()` call alongside Umami. To fully replace Umami, also leave `VITE_ANALYTICS_URL`/`VITE_ANALYTICS_WEBSITE_ID` empty. |
-| `submitReport` | Replaces the default PocketBase report backend. The framework still owns the submitting/submitted/error UI around the call — throw to signal failure. Note the PocketBase-backed admin panel (`/administro`) reads straight from PocketBase, so a deployment that swaps `submitReport` owns its own report inbox. |
+| `submitReport` | Replaces the default PocketBase report backend. The framework still owns the submitting/submitted/error UI around the call — throw to signal failure. Note the PocketBase-backed admin panel (`/admin`) reads straight from PocketBase, so a deployment that swaps `submitReport` owns its own report inbox. |
 
 The `version: 1` field is the upgrade story: if a future framework release
 needs a breaking change to this contract, it bumps the accepted version,
