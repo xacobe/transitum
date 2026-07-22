@@ -5,108 +5,33 @@
  * so the map works without a network connection. The composable is a module
  * singleton — all callers share the same reactive state (progress, downloaded set).
  *
- * Offline routing data (Minotor RAPTOR binaries) is also stored in the same
- * IDB store, fetched together with the tile download. A city can have
- * several distinct weekday service patterns (see patterns.json /
- * PatternsManifest) - each is stored under its own 'timetable-{slug}-{hash}'
- * key, alongside the manifest itself ('patterns-{slug}') and the single
- * shared 'stops-{slug}'.
+ * Offline routing data (Minotor RAPTOR binaries) is fetched together with
+ * the tile download, but lives in its own module (services/offlineRoutingData.ts)
+ * since it's a genuinely separate concern (weekday service patterns, not
+ * tiles) - this file re-exports its public functions so every existing
+ * `@/composables/useOfflineTiles` import keeps working unchanged. The raw
+ * IndexedDB primitives both modules share live in services/offlineDb.ts.
  */
 
 import { ref, reactive } from 'vue'
-import type { PatternsManifest } from '@/types'
-
-const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
-
-function weekdayKeyForDate(dateStr?: string | null): typeof WEEKDAY_KEYS[number] {
-  // Parsed/read as UTC throughout (pipeline, server, and here) so the same
-  // "YYYY-MM-DD" always resolves to the same weekday regardless of the
-  // device's local timezone.
-  const d = dateStr ? new Date(`${dateStr}T00:00:00Z`) : new Date()
-  return WEEKDAY_KEYS[d.getUTCDay()]
-}
-
-const DB_NAME    = 'transit-offline'
-const DB_VERSION = 1
-const STORE      = 'tiles'
-
-// ── IndexedDB helpers ──────────────────────────────────────────────────────
-
-let _db: IDBDatabase | null = null
-async function openDB(): Promise<IDBDatabase> {
-  if (_db) return _db
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE)
-    req.onsuccess      = () => { _db = req.result; resolve(_db) }
-    req.onerror        = () => reject(req.error)
-  })
-}
-
-async function idbGet<T>(key: string): Promise<T | null> {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(STORE).objectStore(STORE).get(key)
-    req.onsuccess = () => resolve((req.result as T | undefined) ?? null)
-    req.onerror   = () => reject(req.error)
-  })
-}
-
-async function idbPut(key: string, value: unknown): Promise<void> {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put(value, key)
-    tx.oncomplete = () => resolve()
-    tx.onerror    = () => reject(tx.error)
-  })
-}
-
-async function idbDelete(key: string): Promise<void> {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).delete(key)
-    tx.oncomplete = () => resolve()
-    tx.onerror    = () => reject(tx.error)
-  })
-}
-
-async function idbKeys(): Promise<string[]> {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(STORE).objectStore(STORE).getAllKeys()
-    req.onsuccess = () => resolve(req.result as string[])
-    req.onerror   = () => reject(req.error)
-  })
-}
+import { idbGet, idbPut, idbDelete, idbKeys } from '@/services/offlineDb'
+import {
+  downloadedAt, updateAvail, updatingData,
+  storeRoutingData, getMinotorData, updateDataFiles, checkForUpdates, deleteRoutingData,
+} from '@/services/offlineRoutingData'
 
 // ── Key / URL helpers ──────────────────────────────────────────────────────
 function tileUrl(slug: string): string {
   return `/data/${slug}/tiles.pmtiles`
 }
 
-// ── Module-level shared state ──────────────────────────────────────────────
+// ── Module-level shared state (tile group only - routing-data state lives
+// in offlineRoutingData.ts) ─────────────────────────────────────────────────
 
 const downloaded    = ref(new Set<string>())                 // IDB keys that have a stored blob
 const progress      = reactive<Record<string, number>>({})   // IDB key → 0-1 while downloading
 const sizes         = reactive<Record<string, number>>({})   // IDB key → bytes stored
-const downloadedAt  = reactive<Record<string, string>>({})   // slug → ISO string (when routing data was last downloaded)
-const updateAvail   = reactive<Record<string, boolean>>({})  // slug → true when server has newer routing data
-const updatingData  = reactive<Record<string, boolean>>({})  // slug → true while an updateDataFiles() call is in flight
 let   _initialized  = false
-
-// Silently checks whether the server has newer routing data for a city.
-// Sets updateAvail[slug] if version.json is newer than the stored downloadedAt.
-async function checkForUpdates(slug: string): Promise<void> {
-  try {
-    const resp = await fetch(`/data/${slug}/version.json`, { cache: 'no-store' })
-    if (!resp.ok) return
-    const { generatedAt } = await resp.json() as { generatedAt: string }
-    const localTs = downloadedAt[slug]
-    updateAvail[slug] = !localTs || new Date(generatedAt) > new Date(localTs)
-  } catch { /* offline or no version.json yet — leave updateAvail unchanged */ }
-}
 
 async function init(): Promise<void> {
   if (_initialized) return
@@ -130,67 +55,6 @@ async function init(): Promise<void> {
     }
   } catch {
     // IndexedDB unavailable (private mode, storage denied) — silently disabled.
-  }
-}
-
-// Fetches and stores the Minotor RAPTOR binaries for offline routing -
-// patterns.json plus one timetable.<hash>.bin per distinct weekday pattern
-// it references (usually 1, up to 7), and the single shared stops.bin -
-// stamping downloadedAt in lockstep (offlineRouter.ts's cache key depends on
-// that pairing). Generated by the pipeline (see
-// pipeline/generate_transit_data.mjs). Shared by the initial city download
-// and the lighter data-only update. Throws on HTTP failure - callers decide
-// whether that's fatal (updateDataFiles) or non-critical (downloadCity).
-async function storeRoutingData(slug: string): Promise<void> {
-  const patternsResp = await fetch(`/data/${slug}/patterns.json`)
-  if (!patternsResp.ok) throw new Error(`HTTP error fetching routing data`)
-  const patterns = await patternsResp.json() as PatternsManifest
-  const hashes = [...new Set(Object.values(patterns.weekdayToPattern))]
-
-  const [stResp, ...ttResps] = await Promise.all([
-    fetch(`/data/${slug}/stops.bin`),
-    ...hashes.map(hash => fetch(`/data/${slug}/timetable.${hash}.bin`)),
-  ])
-  if (!stResp.ok || ttResps.some(r => !r.ok)) throw new Error(`HTTP error fetching routing data`)
-  const [stBuf, ...ttBufs] = await Promise.all([stResp.arrayBuffer(), ...ttResps.map(r => r.arrayBuffer())])
-
-  // Drop pattern binaries from a previous generation that are no longer
-  // referenced (e.g. the GTFS calendar shifted and a weekday now maps to a
-  // different hash) so IndexedDB doesn't accumulate stale binaries forever.
-  const keepKeys = new Set(hashes.map(hash => `timetable-${slug}-${hash}`))
-  const staleKeys = (await idbKeys()).filter(k => k.startsWith(`timetable-${slug}-`) && !keepKeys.has(k))
-  await Promise.all(staleKeys.map(idbDelete))
-
-  const now = new Date().toISOString()
-  await Promise.all([
-    idbPut(`patterns-${slug}`, patterns),
-    idbPut(`stops-${slug}`, stBuf),
-    ...hashes.map((hash, i) => idbPut(`timetable-${slug}-${hash}`, ttBufs[i])),
-    idbPut(`downloadedAt-${slug}`, now),
-  ])
-  downloadedAt[slug] = now
-  updateAvail[slug] = false
-}
-
-// Re-downloads only the routing data files (patterns.json + timetable.<hash>.bin + stops.bin + routes.json).
-// Much faster than a full tile re-download; tiles almost never change.
-async function updateDataFiles(slug: string): Promise<void> {
-  updatingData[slug] = true
-  try {
-    await storeRoutingData(slug)
-    try {
-      const cache = await caches.open('city-routes')
-      await Promise.all([
-        cache.delete(`/data/${slug}/routes.json`),
-        cache.delete(`/data/${slug}/routes-meta.json`),
-      ])
-      await Promise.all([
-        cache.add(`/data/${slug}/routes.json`),
-        cache.add(`/data/${slug}/routes-meta.json`),
-      ])
-    } catch { /* non-critical */ }
-  } finally {
-    delete updatingData[slug]
   }
 }
 
@@ -292,46 +156,14 @@ export function useOfflineTiles() {
     }
   }
 
-  /**
-   * Returns the Minotor RAPTOR binary data for a city on the given date (or
-   * today, if omitted), or null if not stored locally. Also null when the
-   * date falls on a known calendar_dates.txt exception - the weekday
-   * patterns stored offline don't model those, so callers should fall back
-   * to an online request instead of silently showing the wrong schedule.
-   */
-  async function getMinotorData(
-    slug: string,
-    date?: string | null,
-  ): Promise<{ timetableData: Uint8Array; stopsData: Uint8Array; patternHash: string } | null> {
-    try {
-      const patterns = await idbGet<PatternsManifest>(`patterns-${slug}`)
-      if (!patterns) return null
-      if (date && patterns.exceptionDates.includes(date)) return null
-
-      const hash = patterns.weekdayToPattern[weekdayKeyForDate(date)]
-      const [ttBuf, stBuf] = await Promise.all([
-        idbGet<ArrayBuffer>(`timetable-${slug}-${hash}`),
-        idbGet<ArrayBuffer>(`stops-${slug}`),
-      ])
-      if (!ttBuf || !stBuf) return null
-      return { timetableData: new Uint8Array(ttBuf), stopsData: new Uint8Array(stBuf), patternHash: hash }
-    } catch { return null }
-  }
-
   /** Removes all stored offline data for a city (tiles + Minotor bins). */
   async function deleteCity(slug: string): Promise<void> {
-    const patternKeys = (await idbKeys()).filter(k => k.startsWith(`timetable-${slug}-`))
     await Promise.all([
       idbDelete(slug),
-      idbDelete(`patterns-${slug}`),
-      idbDelete(`stops-${slug}`),
-      idbDelete(`downloadedAt-${slug}`),
-      ...patternKeys.map(idbDelete),
+      deleteRoutingData(slug),
     ])
     downloaded.value = new Set([...downloaded.value].filter(k => k !== slug))
     delete sizes[slug]
-    delete downloadedAt[slug]
-    delete updateAvail[slug]
     try {
       const cache = await caches.open('city-routes')
       await Promise.all([
