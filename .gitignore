@@ -4,6 +4,14 @@ config/.env
 __pycache__/
 *.pyc
 
+# City configs belong to the deployment, not the framework (see the ownership
+# table in docs/deployment/updating-from-upstream.md). `make use-example` and
+# `make add-city` write them here; committing them upstream would make every
+# deployment conflict on a file it owns. The .example.jsonc references and
+# _countries.json stay tracked - the latter ships as an empty {} placeholder.
+/config/cities/*.json
+!/config/cities/_countries.json
+
 # Downloaded OSM extracts and generated GTFS zips (reproducible, too large to version)
 /data/.cache/*.osm.pbf
 /data/.cache/*.gtfs.zip
