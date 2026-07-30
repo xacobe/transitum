@@ -8,7 +8,16 @@
 // Everything below is optional - include only what you need.
 
 import { IconHeart } from '@tabler/icons-vue'
-import { defineCustomization } from '@/customization'
+// From '@/customization/contract', not the '@/customization' barrel - that
+// barrel does `import.meta.glob('../custom/index.ts', { eager: true })` to
+// pick this file up once copied to custom/index.ts, so importing it back
+// from here is circular. Rollup's ESM hoisting papers over it in a real
+// build, but Vitest's own transform doesn't resolve the cycle in time -
+// defineCustomization is undefined at the point this call below runs,
+// throwing "defineCustomization is not a function" in any test that
+// exercises this import chain. contract.ts defines defineCustomization
+// directly and never imports custom/, so importing from there can't cycle.
+import { defineCustomization } from '@/customization/contract'
 
 export default defineCustomization({
   version: 1,
