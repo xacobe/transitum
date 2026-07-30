@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { buildResultsQuery } from '@/services/resultsQuery'
@@ -10,7 +10,7 @@ import LogoPill from '@/components/home/LogoPill.vue'
 import SearchCard from '@/components/shared/SearchCard.vue'
 import StopPreviewCard from '@/components/home/StopPreviewCard.vue'
 import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
-import { IconMapPinOff } from '@tabler/icons-vue'
+import { IconMapPinOff, IconBus, IconBusStop } from '@tabler/icons-vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
 import { useAllCityStops } from '@/composables/useAllCityStops'
 import { useRoutesList } from '@/composables/useLocalRoutes'
@@ -38,6 +38,39 @@ const isIosPwa =
   typeof navigator !== 'undefined' &&
   (navigator as Navigator & { standalone?: boolean }).standalone === true
 
+// Exact gap between .map-zone's own bottom edge and the top of whichever
+// card is currently in .bottom-overlay (SearchCard or StopPreviewCard -
+// not the same height, and SearchCard's own height already varies with its
+// hint line) - measured directly via getBoundingClientRect rather than
+// reconstructed from the card's height plus assumed offsets, which didn't
+// match its real box and left .map-layers-toggle overlapping the card.
+const toggleBottomSpace = ref(90)
+let bottomOverlayObserver: ResizeObserver | null = null
+
+function measureToggleBottomSpace() {
+  const zone = document.querySelector('.map-zone')
+  const card = document.querySelector('.map-zone .bottom-overlay')
+  if (!zone || !card) return
+  const zoneRect = zone.getBoundingClientRect()
+  const cardRect = card.getBoundingClientRect()
+  toggleBottomSpace.value = zoneRect.bottom - cardRect.top + 10 // 10px clearance above the card
+}
+
+onMounted(() => {
+  nextTick(() => {
+    const card = document.querySelector('.map-zone .bottom-overlay')
+    if (!card) return
+    measureToggleBottomSpace()
+    bottomOverlayObserver = new ResizeObserver(measureToggleBottomSpace)
+    bottomOverlayObserver.observe(card)
+    window.addEventListener('resize', measureToggleBottomSpace)
+  })
+})
+onUnmounted(() => {
+  bottomOverlayObserver?.disconnect()
+  window.removeEventListener('resize', measureToggleBottomSpace)
+})
+
 // The nearby-stops radius is per-city (see frontend/src/cities.ts),
 // fetchNearby reads it from the active city.
 const { origin, geoErrorCode, setOrigin, goSearchOrigin, goSearchDestination } = useOriginLocation({
@@ -45,10 +78,37 @@ const { origin, geoErrorCode, setOrigin, goSearchOrigin, goSearchDestination } =
   searchRouteName: 'search',
   onOriginSet: (lat, lon) => fetchNearby(lat, lon),
 })
-const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode, matchesStopFilter } =
-  useTransitModeFilter()
+const {
+  availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode,
+  matchesFilter, matchesStopFilter,
+} = useTransitModeFilter()
 
-const filteredStops = computed(() => allStops.value.filter(matchesStopFilter))
+// Stops layer: on by default (the map's original purpose - "which stops
+// are near me"). Lines layer: off by default - a full network draw is a
+// lot of overlapping color at city-wide zoom (see the exploration in chat:
+// mostly a clutter problem, not a data-cost one, since allRoutes above is
+// already fetched for selectedStopLegs regardless of this toggle).
+const showStops = ref(true)
+const showRoutes = ref(false)
+
+const filteredStops = computed(() => (showStops.value ? allStops.value.filter(matchesStopFilter) : []))
+
+// One leg per route (its primary direction only), same simplification
+// LinesView's own overview uses - every branch of every line at once
+// would be unreadable here too.
+const allRoutesLegs = computed<MapLeg[]>(() =>
+  allRoutes.value.filter(matchesFilter).flatMap((route): MapLeg[] => {
+    const dir = route.directions[0]
+    if (!dir?.points?.length) return []
+    return [{
+      mode: 'BUS',
+      points: dir.points,
+      routeShortName: route.shortName,
+      routeAgencyId: route.agencyId,
+    }]
+  }),
+)
+const mapRouteLegs = computed(() => (showRoutes.value ? allRoutesLegs.value : selectedStopLegs.value))
 
 // Lines serving the currently previewed stop, drawn on the map the same way
 // LinesView highlights a line - lets a rider see where each of a stop's
@@ -153,11 +213,33 @@ function onMapGeolocateError({ code }: { code: number }) {
   <div class="screen">
     <div class="map-zone">
       <!-- --map-ctrl-top-extra clears the top-bar (logo + settings button) -->
-      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :route-legs="selectedStopLegs" :selected-stop-id="selectedStop?.id" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
+      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :route-legs="mapRouteLegs" :selected-stop-id="selectedStop?.id" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
       <div class="top-bar">
         <div class="top-bar-spacer" aria-hidden="true" />
         <LogoPill />
         <SettingsButton class="settings-btn-corner" />
+      </div>
+      <div class="map-layers-toggle" :style="{ '--toggle-bottom-space': toggleBottomSpace + 'px' }">
+        <button
+          type="button"
+          class="layer-toggle-btn"
+          :class="{ active: showStops }"
+          :aria-pressed="showStops"
+          @click="showStops = !showStops"
+        >
+          <IconBusStop :size="16" aria-hidden="true" />
+          {{ t('home.stopsLayer') }}
+        </button>
+        <button
+          type="button"
+          class="layer-toggle-btn"
+          :class="{ active: showRoutes }"
+          :aria-pressed="showRoutes"
+          @click="showRoutes = !showRoutes"
+        >
+          <IconBus :size="16" aria-hidden="true" />
+          {{ t('home.linesLayer') }}
+        </button>
       </div>
       <div v-if="showModeFilter" class="mode-filter-overlay">
         <ModeFilterBar :modes="availableModes" :is-active="isModeActive" @toggle="toggleMode" />
@@ -231,6 +313,44 @@ function onMapGeolocateError({ code }: { code: number }) {
 
 .settings-btn-corner {
   box-shadow: var(--shadow-card);
+}
+
+/* Stacked directly above .bottom-overlay (SearchCard/StopPreviewCard),
+   right-aligned to its own right edge - same left/right/max-width/margin
+   centering rule as .bottom-overlay itself (see below), so the two align
+   exactly regardless of viewport width, instead of independently guessing
+   where that edge lands. --toggle-bottom-space is measured live (see
+   measureToggleBottomSpace) as the actual gap to the card's top edge. */
+.map-layers-toggle {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: var(--toggle-bottom-space, 90px);
+  z-index: 5;
+  max-width: calc(var(--content-max-width) - 28px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.layer-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--text-label-strong);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+
+.layer-toggle-btn.active {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* Below .top-bar (logo + settings), same anchor the MapLibre controls

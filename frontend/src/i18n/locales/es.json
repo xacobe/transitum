@@ -34,7 +34,9 @@
     "locationDeniedPwa": "Abre en Safari para activar la ubicación",
     "selectedPoint": "Punto seleccionado",
     "useAsOrigin": "Usar como origen",
-    "useAsDestination": "Usar como destino"
+    "useAsDestination": "Usar como destino",
+    "stopsLayer": "Paradas",
+    "linesLayer": "Líneas"
   },
   "stopPreview": {
     "viewStop": "Ver parada",

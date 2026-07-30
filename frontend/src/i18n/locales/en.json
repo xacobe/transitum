@@ -34,7 +34,9 @@
     "locationDeniedPwa": "Open in Safari to enable location",
     "selectedPoint": "Selected point",
     "useAsOrigin": "Set as origin",
-    "useAsDestination": "Set as destination"
+    "useAsDestination": "Set as destination",
+    "stopsLayer": "Stops",
+    "linesLayer": "Lines"
   },
   "stopPreview": {
     "viewStop": "View stop",
