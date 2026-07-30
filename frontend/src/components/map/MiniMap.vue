@@ -24,7 +24,7 @@ import {
   pickMenuElement, injectMarkerStyles,
 } from '@/map/markerElements'
 import {
-  ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, NEARBY_STOPS_SOURCE,
+  ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, NEARBY_STOPS_SOURCE,
   NEARBY_STOP_IMG, stopIconImg,
   initOverlayLayers, registerOverlayHandlers,
 } from '@/map/overlayLayers'
@@ -46,6 +46,10 @@ const props = withDefaults(defineProps<{
   to?: [number, number]
   routeLegs?: MapLeg[]
   stops?: { id?: string; name?: string; lat: number; lon: number; modes?: TransitMode[] }[]
+  /** Network mode: every stop in the city, drawn as a clustered background
+   * layer (same clustering as search mode) beneath the highlighted line's
+   * own stops (`stops` above) - see renderStops()'s network branch. */
+  cityStops?: { id?: string; name?: string; lat: number; lon: number; modes?: TransitMode[] }[]
   highlightedKey?: string
   /** Route mode: pulses/enlarges the matching stop from `stops` - e.g. the
    * one MapStopPanel is currently open for (LineView). Own lightweight
@@ -67,6 +71,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   routeLegs: () => [],
   stops: () => [],
+  cityStops: () => [],
 })
 
 const emit = defineEmits(['stop-click', 'geolocate', 'geolocate-error', 'pick-origin', 'pick-destination'])
@@ -225,13 +230,19 @@ function renderStops() {
         .map((s, i) => toStopFeature(s, color, { seq: String(i + 2) })),
     )
     setSourceData(STOPS_MAP_SOURCE, [])
+    setSourceData(STOPS_NETWORK_SOURCE, [])
     return
   }
 
-  // network mode: highlighted line stops as unclustered GL circles.
+  // network mode: highlighted line stops as unclustered GL circles, plus
+  // every city stop as an unclustered background layer (STOPS_NETWORK_SOURCE,
+  // not the clustered STOPS_MAP_SOURCE search mode uses) - invisible zoomed
+  // out over most of the city, mode icons appear directly past its minzoom,
+  // no cluster-bubble step in between (see overlayLayers.ts).
   if (props.mode === 'network') {
     const color = stopDotColor().bg
     setSourceData(STOPS_SOURCE, props.stops.map((s) => toStopFeature(s, color)))
+    setSourceData(STOPS_NETWORK_SOURCE, props.cityStops.map((s) => toStopFeature(s, stopColor())))
     setSourceData(STOPS_MAP_SOURCE, [])
     return
   }
@@ -241,6 +252,7 @@ function renderStops() {
   if (props.mode === 'search') {
     setSourceData(STOPS_SOURCE, [])
     setSourceData(STOPS_MAP_SOURCE, props.stops.map((s) => toStopFeature(s, stopColor())))
+    setSourceData(STOPS_NETWORK_SOURCE, [])
     return
   }
 
@@ -252,12 +264,14 @@ function renderStops() {
     setSourceData(NEARBY_STOPS_SOURCE, props.stops.map((s) => toStopFeature(s, '')))
     setSourceData(STOPS_SOURCE, [])
     setSourceData(STOPS_MAP_SOURCE, [])
+    setSourceData(STOPS_NETWORK_SOURCE, [])
     return
   }
 
   setSourceData(NEARBY_STOPS_SOURCE, [])
   setSourceData(STOPS_SOURCE, [])
   setSourceData(STOPS_MAP_SOURCE, [])
+  setSourceData(STOPS_NETWORK_SOURCE, [])
 }
 
 // Pulsing/enlarged marker over whichever stop selectedStopId points at (see
@@ -620,7 +634,7 @@ onUnmounted(() => {
 watch(
   () => [
     props.mode, props.center, props.from, props.to,
-    props.routeLegs, props.stops, props.highlightedKey,
+    props.routeLegs, props.stops, props.cityStops, props.highlightedKey,
     props.userPosition, props.pickedPoint,
   ],
   () => { if (styleReady) render() },

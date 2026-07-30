@@ -31,6 +31,12 @@ const STOPS_CLUSTER_LAYER  = 'mm-stops-cluster'
 const STOPS_COUNT_LAYER    = 'mm-stops-count'
 const STOPS_POINT_LAYER    = 'mm-stops-point'
 
+// Network mode: every city stop as a background layer, deliberately not
+// clustered (no bubble/count UI) - invisible zoomed out over most of the
+// city, individual mode icons appear past minzoom (see STOPS_NETWORK_LAYER).
+export const STOPS_NETWORK_SOURCE = 'mm-stops-network'
+const STOPS_NETWORK_LAYER  = 'mm-stops-network-point'
+
 // Stop mode: nearby-stop dots, small + muted, with the same bus-stop icon
 // as the main "you are here" marker so they read as stops at a glance too.
 export const NEARBY_STOPS_SOURCE = 'mm-nearby-stops'
@@ -150,6 +156,31 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     },
   })
 
+  // ── Network stop source (network mode — all city stops, unclustered) ─────
+  // No cluster bubbles here on purpose: zoomed out over most of the city
+  // (viewing the network overview or a highlighted line) nothing shows at
+  // all, keeping the route lines readable; past minzoom (one step in from
+  // where "near me" lands - GeolocateControl caps network mode at zoom 14,
+  // see MiniMap.vue - so a single zoom-out tap from there hides stops again)
+  // mode-appropriate icons appear directly, no intermediate cluster-count step.
+  map.addSource(STOPS_NETWORK_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: STOPS_NETWORK_LAYER,
+    type: 'symbol',
+    source: STOPS_NETWORK_SOURCE,
+    minzoom: 14,
+    layout: {
+      'icon-image': ['get', 'icon'],
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 16, 0.75],
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+  })
+
   // ── Clustered stop source (search mode — all city stops) ─────────────────
   // MapLibre clusters points natively: the source merges nearby features into
   // a single cluster feature with a `point_count` property.
@@ -251,13 +282,14 @@ export function registerOverlayHandlers(
   map.on('click', NEARBY_STOPS_LAYER, emitStopClick)
   // Tap an individual (unclustered) stop → same payload for the parent panel
   map.on('click', STOPS_POINT_LAYER, emitStopClick)
+  map.on('click', STOPS_NETWORK_LAYER, emitStopClick)
 
   map.on('click', STOPS_CLUSTER_LAYER, onClusterClick)
   // The count label (symbol layer) sits on top of the circle and can swallow the
   // click before it reaches STOPS_CLUSTER_LAYER — register the same handler on it.
   map.on('click', STOPS_COUNT_LAYER, onClusterClick)
 
-  for (const layer of [STOPS_LAYER, NEARBY_STOPS_LAYER, STOPS_CLUSTER_LAYER, STOPS_COUNT_LAYER, STOPS_POINT_LAYER]) {
+  for (const layer of [STOPS_LAYER, NEARBY_STOPS_LAYER, STOPS_CLUSTER_LAYER, STOPS_COUNT_LAYER, STOPS_POINT_LAYER, STOPS_NETWORK_LAYER]) {
     map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = '' })
   }

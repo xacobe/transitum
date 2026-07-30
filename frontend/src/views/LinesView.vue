@@ -11,6 +11,7 @@ import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import ModeIcon from '@/components/shared/ModeIcon.vue'
 import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
+import { useAllCityStops } from '@/composables/useAllCityStops'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useCityStore } from '@/stores/city'
 import { useNavigation } from '@/composables/useNavigation'
@@ -31,8 +32,9 @@ const { routes, loading } = useRoutesList()
 const favorites = useFavoritesStore()
 const city = useCityStore()
 const { hasMultipleAgencies } = useAgencies()
-const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode, matchesFilter } =
+const { availableModes, showFilter: showModeFilter, isActive: isModeActive, toggle: toggleMode, matchesFilter, matchesStopFilter } =
   useTransitModeFilter(routes)
+const { stops: allCityStops } = useAllCityStops()
 
 const showMap = ref(false)
 const highlightedLine = ref<Route | null>(null)
@@ -138,6 +140,18 @@ const mapLegs = computed(() =>
   }),
 )
 
+// Background layer for the network map: every stop in the city, clustered
+// at low zoom the same way search mode's map is (see MiniMap's cityStops
+// prop) - individual stops only appear once zoomed in past clusterMaxZoom,
+// so "near me" naturally reveals them once the GeolocateControl's fit lands
+// past that threshold. Respects the mode filter bar same as the badges
+// strip. Hidden once a line is highlighted - its own stops (highlightedStops
+// below) already draw as bigger, line-colored circles on top of this layer,
+// and the generic mode icons here would otherwise mask them.
+const filteredCityStops = computed(() =>
+  highlightedLine.value ? [] : allCityStops.value.filter(matchesStopFilter),
+)
+
 const highlightedStops = computed(() => {
   if (!highlightedLine.value) return []
   const route = routes.value.find(
@@ -176,11 +190,18 @@ function setTab(map: boolean) {
 // In map mode the same tap selects/deselects the line on the map -
 // the two would otherwise compete for the same gesture.
 function onRowClick(route: Route) {
-  if (showMap.value) {
-    highlightedLine.value = isHighlighted(route) ? null : route
-  } else {
+  if (!showMap.value) {
     openLine(route.shortName)
+    return
   }
+  // While "near me" is framing the user's surroundings, picking a line from
+  // the strip shouldn't yank the camera away to fit that line (the usual
+  // network-mode behavior below) - only the highlight/dim treatment should
+  // change, same keepView mechanism selectLineFromPanel already uses.
+  const suppressCameraMove = nearbyRouteIds.value !== null
+  if (suppressCameraMove) keepMapView.value = true
+  highlightedLine.value = isHighlighted(route) ? null : route
+  if (suppressCameraMove) nextTick(() => { keepMapView.value = false })
 }
 
 function toggleFavorite(route: Route) {
@@ -234,7 +255,7 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
     <!-- FULLSCREEN MAP MODE -->
     <template v-if="showMap">
       <div class="map-wrap">
-        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
+        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :city-stops="filteredCityStops" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
         <button type="button" class="btn btn--primary locate-btn" :disabled="locating" @click="toggleNearby">
           <IconMap v-if="nearbyRouteIds" :size="18" />
           <IconCurrentLocation v-else :size="18" />
@@ -338,6 +359,11 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
   display: flex;
   flex-direction: row;
   align-items: center;
+  /* "safe" keeps the start-aligned fallback when the strip has more badges
+     than fit the screen (a full line list commonly does) - plain `center`
+     would let the excess get clipped off the scrollable start on browsers
+     that honor it strictly. */
+  justify-content: safe center;
   gap: 6px;
   padding: 10px 12px;
   overflow-x: auto;
