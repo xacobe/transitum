@@ -19,6 +19,7 @@
     "estimated": "Estimado",
     "viewStop": "Ver parada",
     "viewLine": "Ver línea",
+    "hideLine": "Ocultar línea",
     "viewSchedule": "Ver horario",
     "viewRoute": "Ver ruta",
     "noLines": "Ninguna línea pasa por esta parada.",

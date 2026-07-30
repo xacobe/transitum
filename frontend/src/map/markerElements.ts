@@ -16,7 +16,10 @@ import flagSvg    from '@tabler/icons/outline/flag-3.svg?raw'
 
 /**
  * Pulsing dot (animated ring + solid dot). Used for the user's GPS position
- * and, with a bigger size/faster pulse, for the currently selected stop.
+ * and, with a bigger size/faster pulse, for the currently selected stop in
+ * route mode (search mode's own selected-stop halo is a GL layer instead -
+ * see MiniMap.vue's startSelectedStopHalo - so it can't drift off-center
+ * from the icon the way an HTML marker overlaid on the canvas could).
  */
 export function pulsingDotElement(
   color: string,

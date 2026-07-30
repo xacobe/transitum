@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { buildResultsQuery } from '@/services/resultsQuery'
-import type { NamedPosition } from '@/types'
+import type { NamedPosition, MapLeg } from '@/types'
 import SettingsButton from '@/components/shared/SettingsButton.vue'
 import MiniMap from '@/components/map/MiniMap.vue'
 import LogoPill from '@/components/home/LogoPill.vue'
@@ -13,6 +13,7 @@ import ModeFilterBar from '@/components/shared/ModeFilterBar.vue'
 import { IconMapPinOff } from '@tabler/icons-vue'
 import { useNearbyStops } from '@/composables/useLocalStops'
 import { useAllCityStops } from '@/composables/useAllCityStops'
+import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useOriginLocation } from '@/composables/useOriginLocation'
 import { useNavigation } from '@/composables/useNavigation'
 import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
@@ -24,6 +25,7 @@ const { t } = useI18n()
 const appUrl = import.meta.env.VITE_APP_URL ?? '/'
 const { fetchNearby } = useNearbyStops()       // still used for origin geolocation flow
 const { stops: allStops } = useAllCityStops()  // all city stops for the map
+const { routes: allRoutes } = useRoutesList()  // for selectedStopLegs below
 const { openStop: openStopView } = useNavigation()
 const city = useCityStore()
 const selectedStop   = ref<Stop | null>(null)
@@ -47,6 +49,27 @@ const { availableModes, showFilter: showModeFilter, isActive: isModeActive, togg
   useTransitModeFilter()
 
 const filteredStops = computed(() => allStops.value.filter(matchesStopFilter))
+
+// Lines serving the currently previewed stop, drawn on the map the same way
+// LinesView highlights a line - lets a rider see where each of a stop's
+// lines actually goes without leaving the map. A stop can appear in more
+// than one direction of the same route (both sides of an out-and-back line
+// sharing one platform) - each matching direction gets its own leg.
+const selectedStopLegs = computed<MapLeg[]>(() => {
+  if (!selectedStop.value) return []
+  const stopId = selectedStop.value.id
+  return allRoutes.value.flatMap((route) =>
+    route.directions.flatMap((dir): MapLeg[] => {
+      if (!dir.points?.length || !dir.stops.some((s) => s.id === stopId)) return []
+      return [{
+        mode: 'BUS',
+        points: dir.points,
+        routeShortName: route.shortName,
+        routeAgencyId: route.agencyId,
+      }]
+    }),
+  )
+})
 
 // Show notification when the initial geolocation on mount fails with PERMISSION_DENIED
 watch(geoErrorCode, (code) => {
@@ -130,7 +153,7 @@ function onMapGeolocateError({ code }: { code: number }) {
   <div class="screen">
     <div class="map-zone">
       <!-- --map-ctrl-top-extra clears the top-bar (logo + settings button) -->
-      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
+      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :route-legs="selectedStopLegs" :selected-stop-id="selectedStop?.id" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
       <div class="top-bar">
         <div class="top-bar-spacer" aria-hidden="true" />
         <LogoPill />

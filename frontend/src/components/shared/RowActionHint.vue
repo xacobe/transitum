@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { IconChevronRight } from '@tabler/icons-vue'
+import type { Component } from 'vue'
 
-defineProps<{ label: string }>()
+withDefaults(defineProps<{ label: string; icon?: Component }>(), {
+  icon: () => IconChevronRight,
+})
 </script>
 
 <template>
   <span class="row-action-hint">
     {{ label }}
-    <IconChevronRight :size="14" aria-hidden="true" />
+    <component :is="icon" :size="14" aria-hidden="true" />
   </span>
 </template>
 

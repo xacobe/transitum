@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { IconChevronDown, IconChevronUp } from '@tabler/icons-vue'
 import ListRow from './ListRow.vue'
 import LineBadge from './LineBadge.vue'
 import FrequencyBadge from './FrequencyBadge.vue'
@@ -17,11 +19,28 @@ const props = defineProps<{
   //    "no more service today" note instead of a misleading frequency guess.
   //  - non-empty: real times, shown as-is.
   departures?: string[]
+  // Whether this line's inline stop list (LineStopsAccordion) is currently
+  // open below this row - only meaningful for frequency-based lines
+  // (hasFixedSchedule ones open LineScheduleModal instead, never expand in
+  // place), swaps the trailing hint from "View line ⌄" to "Hide line ⌃".
+  expanded?: boolean
 }>()
 defineEmits(['select'])
 
 const { t } = useI18n()
 const { hasMultipleAgencies } = useAgencies()
+
+const actionLabel = computed(() => {
+  if (props.line.hasFixedSchedule) return t('common.viewSchedule')
+  return props.expanded ? t('common.hideLine') : t('common.viewLine')
+})
+// Fixed-schedule lines open LineScheduleModal (a separate concern) - leave
+// them on RowActionHint's own default chevron-right rather than the
+// down/up pair that only makes sense for an in-place expand/collapse.
+const actionIcon = computed(() => {
+  if (props.line.hasFixedSchedule) return undefined
+  return props.expanded ? IconChevronUp : IconChevronDown
+})
 </script>
 
 <template>
@@ -51,7 +70,7 @@ const { hasMultipleAgencies } = useAgencies()
       </span>
     </div>
     <template #trailing>
-      <RowActionHint :label="line.hasFixedSchedule ? t('common.viewSchedule') : t('common.viewLine')" />
+      <RowActionHint :label="actionLabel" :icon="actionIcon" />
     </template>
   </ListRow>
 </template>

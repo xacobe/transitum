@@ -8,6 +8,7 @@ import ListRow from '@/components/shared/ListRow.vue'
 import ServiceClosedNotice from '@/components/shared/ServiceClosedNotice.vue'
 import RowActionHint from '@/components/shared/RowActionHint.vue'
 import { useStopDetail } from '@/composables/useRouting'
+import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useUpcomingDepartures } from '@/composables/useUpcomingDepartures'
 import { useFrequency } from '@/composables/useFrequency'
 import { useFavoritesStore } from '@/stores/favorites'
@@ -18,11 +19,20 @@ import { ref } from 'vue'
 import { IconChevronLeft, IconStar, IconStarFilled, IconWifiOff, IconWalk, IconFlag } from '@tabler/icons-vue'
 import ReportModal from '@/components/shared/ReportModal.vue'
 import LineScheduleModal from '@/components/shared/LineScheduleModal.vue'
+import LineStopsAccordion from '@/components/shared/LineStopsAccordion.vue'
 import { useOfflineError } from '@/composables/useOfflineError'
-import type { StopLine } from '@/types'
+import type { StopLine, MapLeg, Stop } from '@/types'
 
 const reportOpen = ref(false)
 const scheduleFor = ref<StopLine | null>(null)
+// Which frequency-based line's inline stop list is open (see
+// LineStopsAccordion) - keyed the same way the list's own :key is, since a
+// stop can list the same shortName+agency twice under different headsigns
+// (branching line). At most one open at a time: expanding a second line
+// collapses whichever was open - keeps the list from growing unbounded on
+// a stop that can have a couple dozen lines passing through, and gives the
+// map below a single unambiguous line to draw (see expandedLineLegs).
+const expandedLineKey = ref<string | null>(null)
 import { useNavigation } from '@/composables/useNavigation'
 
 const route = useRoute()
@@ -32,12 +42,48 @@ const { stop, lines, nearbyStops, loading, error, fetchStop } = useStopDetail()
 const { departuresByLine, load: loadDepartures } = useUpcomingDepartures()
 const favorites = useFavoritesStore()
 const city = useCityStore()
+// Only used for the expanded line's geometry below - routes.json is
+// already cached per city (see loadCityRoutes), so this doesn't duplicate
+// LineStopsAccordion's own fetch of the same data.
+const { routes: allRoutes } = useRoutesList()
 
 const serviceOpen = computed(() => isWithinServiceHours())
 const isOfflineError = useOfflineError(error)
 const isFav = computed(() => (stop.value ? favorites.isFavorite(stop.value.id) : false))
 const stopCenter = computed<[number, number] | undefined>(() =>
   stop.value ? [stop.value.lat, stop.value.lon] : undefined,
+)
+
+// Drawn on the map above once a line is expanded below (see
+// expandedLineKey) - the same direction LineStopsAccordion shows, matched
+// by this StopLine row's own headsign (see its own prop doc comment for
+// why: StopDetail already splits entries per matching direction).
+const expandedLineLegs = computed<MapLeg[]>(() => {
+  if (!expandedLineKey.value) return []
+  const line = lines.value.find((l) => lineRowKey(l) === expandedLineKey.value)
+  if (!line) return []
+  const fullRoute = allRoutes.value.find((r) => r.shortName === line.shortName && r.agencyId === line.agencyId)
+  if (!fullRoute) return []
+  const dir = fullRoute.directions.find((d) => d.headsign === line.headsign) ?? fullRoute.directions[0]
+  if (!dir?.points?.length) return []
+  return [{
+    mode: 'BUS',
+    points: dir.points,
+    routeShortName: fullRoute.shortName,
+    routeAgencyId: fullRoute.agencyId,
+  }]
+})
+
+// Set from LineStopsAccordion's highlight-stop event (a stop picked from
+// the expanded line's own list, not from the map) - drawn on the map above
+// via selectedStopId's usual halo/enlarge treatment. Not necessarily one
+// of nearbyStops, so it's merged into mapStops below rather than looked up
+// there, purely so MiniMap's own by-id lookup (shared with every other
+// mode) has something to find.
+const highlightedAccordionStop = ref<Stop | null>(null)
+watch(expandedLineKey, () => { highlightedAccordionStop.value = null })
+const mapStops = computed(() =>
+  highlightedAccordionStop.value ? [...nearbyStops.value, highlightedAccordionStop.value] : nearbyStops.value,
 )
 
 function load() {
@@ -70,17 +116,25 @@ function toggleFavorite() {
 const stopId   = computed(() => stop.value?.id   ?? '')
 const stopName = computed(() => stop.value?.name ?? '')
 
-const { openStop, openLine, goBack: navGoBack } = useNavigation()
+const { openStop, goBack: navGoBack } = useNavigation()
+
+function lineRowKey(line: StopLine): string {
+  return `${lineKey(line.agencyId, line.shortName)}:${line.headsign ?? ''}`
+}
 
 // Lines with a real published schedule open a modal with today's full
-// timetable at this stop (see LineScheduleModal); frequency-based lines
-// have no such timetable, so they still go straight to the line overview.
+// timetable at this stop (see LineScheduleModal) - a different need
+// (today's actual departure times) than the inline preview below, so left
+// as-is. Frequency-based lines have no such timetable; clicking one
+// toggles its inline stop list + route map open right here instead of
+// navigating to the full line view.
 function selectLine(line: StopLine) {
   if (line.hasFixedSchedule) {
     scheduleFor.value = line
-  } else {
-    openLine(line.shortName)
+    return
   }
+  const key = lineRowKey(line)
+  expandedLineKey.value = expandedLineKey.value === key ? null : key
 }
 
 function goBack() {
@@ -101,7 +155,7 @@ function goBack() {
     </div>
 
     <div class="map-wrap">
-      <MiniMap mode="stop" :center="stopCenter" :stops="nearbyStops" @stop-click="(s) => openStop(s.id)" />
+      <MiniMap mode="stop" :center="stopCenter" :stops="mapStops" :route-legs="expandedLineLegs" :selected-stop-id="highlightedAccordionStop?.id" @stop-click="(s) => openStop(s.id)" />
     </div>
 
     <div class="actions">
@@ -149,13 +203,24 @@ function goBack() {
           <IconWifiOff :size="13" aria-hidden="true" />
           {{ t('stop.offlineData') }}
         </div>
-        <StopRow
-          v-for="line in lines"
-          :key="`${lineKey(line.agencyId, line.shortName)}:${line.headsign ?? ''}`"
-          :line="line"
-          :departures="departuresByLine[line.shortName]"
-          @select="selectLine(line)"
-        />
+        <template v-for="line in lines" :key="lineRowKey(line)">
+          <StopRow
+            :line="line"
+            :departures="departuresByLine[line.shortName]"
+            :expanded="expandedLineKey === lineRowKey(line)"
+            :class="{ 'row-expanded': expandedLineKey === lineRowKey(line) }"
+            @select="selectLine(line)"
+          />
+          <LineStopsAccordion
+            v-if="expandedLineKey === lineRowKey(line)"
+            :short-name="line.shortName"
+            :agency-id="line.agencyId ?? ''"
+            :headsign="line.headsign"
+            :current-stop-id="stopId"
+            @view-stop="openStop"
+            @highlight-stop="highlightedAccordionStop = $event"
+          />
+        </template>
 
         <template v-if="nearbyStops.length > 0">
           <div class="list-header nearby-header">
@@ -228,6 +293,20 @@ function goBack() {
   background: var(--color-fav-saved-bg);
   border-color: var(--color-fav-saved-border);
   color: var(--color-fav-saved-text);
+}
+
+/* :deep() - .row-expanded lands on ListRow's own root element (via
+   fallthrough attrs), a different scope-id than this component's.
+   --color-text/--color-muted are redefined (not just `color` set here)
+   because StopRow's own text elements declare their color explicitly from
+   those same tokens - an explicit child declaration always wins over an
+   inherited `color`, but redefining the custom property itself cascades
+   into whatever reads var(--color-text)/var(--color-muted) underneath,
+   regardless of StopRow's own scoped styles. */
+:deep(.row-expanded) {
+  background: var(--color-header-bg);
+  --color-text: var(--color-header-text);
+  --color-muted: var(--color-header-text);
 }
 
 /* Flush against the actions row above - no top padding on top of the

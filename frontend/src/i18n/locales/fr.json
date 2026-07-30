@@ -19,6 +19,7 @@
     "estimated": "Estimé",
     "viewStop": "Voir l'arrêt",
     "viewLine": "Voir la ligne",
+    "hideLine": "Masquer la ligne",
     "viewSchedule": "Voir les horaires",
     "viewRoute": "Voir l'itinéraire",
     "noLines": "Aucune ligne ne passe par cet arrêt.",

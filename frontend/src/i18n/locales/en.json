@@ -19,6 +19,7 @@
     "estimated": "Estimated",
     "viewStop": "View stop",
     "viewLine": "View line",
+    "hideLine": "Hide line",
     "viewSchedule": "View schedule",
     "viewRoute": "View route",
     "noLines": "No line stops here.",

@@ -24,8 +24,8 @@ import {
   pickMenuElement, injectMarkerStyles,
 } from '@/map/markerElements'
 import {
-  ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, NEARBY_STOPS_SOURCE,
-  NEARBY_STOP_IMG, stopIconImg,
+  ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, STOPS_SELECTED_SOURCE,
+  NEARBY_STOPS_SOURCE, NEARBY_STOP_IMG, stopIconImg,
   initOverlayLayers, registerOverlayHandlers,
 } from '@/map/overlayLayers'
 import type { MapLeg, TransitMode } from '@/types'
@@ -98,6 +98,12 @@ let selectedStopMarker: maplibregl.Marker | null = null
 // Stop mode: coordinate key of the stop last framed by render() - see its
 // "Stop mode" branch below.
 let lastStopFocusKey: string | null = null
+// Search mode: key of the center render() last actually moved the camera
+// to - see its "Search mode" branch below.
+let lastSearchCenterKey: string | null = null
+// Search mode: id of the stop the appear-burst animation last played for -
+// see startSelectedStopHalo's own doc comment.
+let lastSelectedStopKey: string | null = null
 
 // Context-menu popup (right-click / long-press to pick origin or destination)
 let pickPopup: maplibregl.Popup | null = null
@@ -177,12 +183,36 @@ function toStopFeature(
     geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
     properties: {
       id: s.id ?? '', name: s.name ?? '', lat: s.lat, lon: s.lon, color,
-      // Only STOPS_POINT_LAYER (search mode) actually reads 'icon' - harmless
-      // on the other sources' circle-type layers, which ignore it.
+      // Only STOPS_POINT_LAYER (search mode) actually reads 'icon'/'selected'/
+      // 'anySelected' - harmless on the other sources' circle-type layers,
+      // which ignore them.
       icon: stopIconImg(pickStopIconMode(s.modes)),
+      selected: s.id != null && s.id === props.selectedStopId ? 1 : 0,
+      anySelected: props.selectedStopId ? 1 : 0,
       ...extra,
     },
   }
+}
+
+// Plain, undimmed route-line features - shared by stop mode (the expanded
+// line's own drawing on StopView's map) and search mode (a stop's serving
+// lines on HomeView's map, see its selectedStopLegs). Neither ever draws
+// more than a handful of legs at once, so no dimming/highlight logic is
+// needed the way route/network mode's own feature-building has.
+function simpleRouteFeatures(legs: MapLeg[]): Feature[] {
+  return legs
+    .filter((leg) => leg.points.length > 0)
+    .map((leg): Feature => ({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: pointsToCoords(leg.points) },
+      properties: {
+        color: colorFor(leg.routeShortName ?? '', leg.routeAgencyId).bg,
+        opacity: 0.85,
+        weight: 5,
+        walk: false,
+        dashed: false,
+      },
+    }))
 }
 
 // ── Marker helpers ─────────────────────────────────────────────────────────
@@ -274,16 +304,93 @@ function renderStops() {
   setSourceData(STOPS_NETWORK_SOURCE, [])
 }
 
-// Pulsing/enlarged marker over whichever stop selectedStopId points at (see
-// its prop doc comment) - own marker variable and update path, deliberately
-// outside renderStops()/render() so selecting a stop never re-triggers route
-// mode's unconditional fitBounds.
+// Search mode: one-shot "appear" burst behind the selected stop's own icon
+// (see STOPS_SELECTED_SOURCE's doc comment for why this is a GL layer, not
+// an HTML marker) - plays once when a stop is newly selected, then clears
+// itself, rather than pulsing indefinitely. The enlarge/dim treatment
+// (toStopFeature's 'selected'/'anySelected', read by STOPS_POINT_LAYER) is
+// the persistent indicator; this is just the entrance flourish. Driven by
+// rewriting the source's one feature every frame - MapLibre has no native
+// paint-property animation.
+let selectedStopHaloFrame: number | null = null
+
+function stopSelectedHalo() {
+  if (selectedStopHaloFrame != null) {
+    cancelAnimationFrame(selectedStopHaloFrame)
+    selectedStopHaloFrame = null
+  }
+  setSourceData(STOPS_SELECTED_SOURCE, [])
+}
+
+// `icon` also feeds STOPS_SELECTED_ICON_LAYER's persistent enlarged icon
+// (see overlayLayers.ts) - that one isn't animated, so once the burst
+// finishes fading (opacity 0) the feature stays in the source rather than
+// being cleared, keeping the enlarged icon visible for as long as this stop
+// stays selected. stopSelectedHalo() (called from updateSelectedStopMarker
+// when nothing - or a different stop - is selected) is what removes it.
+function startSelectedStopHalo(stop: { id?: string; name?: string; lat: number; lon: number; modes?: TransitMode[] }) {
+  if (selectedStopHaloFrame != null) cancelAnimationFrame(selectedStopHaloFrame)
+  const color = stopDotColor().bg
+  const icon = stopIconImg(pickStopIconMode(stop.modes))
+  const durationMs = 500
+  const minRadius = 10
+  const maxRadius = 32
+  const start = performance.now()
+
+  function tick(now: number) {
+    const t = Math.min((now - start) / durationMs, 1)
+    const eased = 1 - (1 - t) * (1 - t) // ease-out
+    const feature: Feature<Point> = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+      properties: {
+        radius: minRadius + eased * (maxRadius - minRadius),
+        opacity: 0.6 * (1 - eased),
+        color, icon,
+        // Same shape STOPS_POINT_LAYER's click handler reads (StopClickPayload) -
+        // this layer sits on top of it and registers the same click handler.
+        id: stop.id ?? '', name: stop.name ?? '', lat: stop.lat, lon: stop.lon,
+      },
+    }
+    setSourceData(STOPS_SELECTED_SOURCE, [feature])
+    selectedStopHaloFrame = t < 1 ? requestAnimationFrame(tick) : null
+  }
+  selectedStopHaloFrame = requestAnimationFrame(tick)
+}
+
+// Pulsing marker (route mode) / one-shot burst (search + network modes)
+// over whichever stop selectedStopId points at (see its prop doc comment) -
+// own marker variable and update path, deliberately outside
+// renderStops()/render() so selecting a stop never re-triggers route/
+// network mode's unconditional fitBounds.
 function updateSelectedStopMarker() {
   selectedStopMarker?.remove()
   selectedStopMarker = null
-  if (!map || !styleReady || !props.selectedStopId) return
+  if (!map || !styleReady || !props.selectedStopId) {
+    lastSelectedStopKey = null
+    stopSelectedHalo()
+    return
+  }
+  // Network mode's own `stops` prop is only ever the highlighted line's
+  // stops (or empty) - a stop picked from the city-wide background layer
+  // (cityStops) needs its own fallback lookup there.
   const stop = props.stops.find((s) => s.id === props.selectedStopId)
-  if (!stop) return
+    ?? props.cityStops.find((s) => s.id === props.selectedStopId)
+  if (!stop) {
+    lastSelectedStopKey = null
+    stopSelectedHalo()
+    return
+  }
+
+  if (props.mode === 'search' || props.mode === 'network' || props.mode === 'stop') {
+    // Only replay the burst when the selection actually changed - this runs
+    // on every render() cycle (any prop change), not just an actual pick.
+    if (props.selectedStopId !== lastSelectedStopKey) {
+      lastSelectedStopKey = props.selectedStopId
+      startSelectedStopHalo(stop)
+    }
+    return
+  }
 
   const el = pulsingDotElement(stopDotColor().bg, 26, {
     ringInset: '-10px', duration: '1.8s', shadow: '0 2px 8px rgba(0,0,0,.4)',
@@ -413,7 +520,9 @@ function render() {
   // fallback view already "contains" it at zoom 12 - the search mode
   // viewport check would silently never zoom to the actual stop.
   } else if (props.mode === 'stop') {
-    setSourceData(ROUTE_SOURCE, [])
+    // The expanded line's own drawing (see StopView's expandedLineLegs) -
+    // empty (nothing drawn) whenever no line is expanded.
+    setSourceData(ROUTE_SOURCE, simpleRouteFeatures(props.routeLegs))
     const c = city.activeCity.center
     if (props.center) {
       const key = `${props.center[0]},${props.center[1]}`
@@ -429,7 +538,9 @@ function render() {
 
   // ── Search mode ────────────────────────────────────────────────────────────
   } else {
-    setSourceData(ROUTE_SOURCE, [])
+    // Lines serving the currently previewed stop (see HomeView's
+    // selectedStopLegs).
+    setSourceData(ROUTE_SOURCE, simpleRouteFeatures(props.routeLegs))
     const c = city.activeCity.center
     // Ignore props.center if it's from a different city (e.g. GPS from the city
     // the user is physically in while browsing a different selected city).
@@ -444,17 +555,31 @@ function render() {
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) < 60
     })()
 
+    // Only move the camera when the origin (or the lack of one) actually
+    // changed since the last render - render() re-runs on every prop change
+    // (stops, routeLegs, ...), and without this guard any of those - e.g.
+    // selecting a distant stop, which now draws its lines via routeLegs -
+    // would snap the view back to the origin even though the user had
+    // panned away on purpose to look at that stop.
     if (inActiveCity) {
-      const lngLat = toLngLat(props.center!)
-      // Only pan/zoom when the new center is outside the current viewport.
-      if (!map.getBounds().contains(lngLat)) {
-        map.setCenter(lngLat)
-        if (map.getZoom() < 14) map.setZoom(15)
+      const key = `origin:${props.center![0]},${props.center![1]}`
+      if (key !== lastSearchCenterKey) {
+        lastSearchCenterKey = key
+        const lngLat = toLngLat(props.center!)
+        // Only pan/zoom when the new center is outside the current viewport.
+        if (!map.getBounds().contains(lngLat)) {
+          map.setCenter(lngLat)
+          if (map.getZoom() < 14) map.setZoom(15)
+        }
       }
     } else {
       // No center in the active city: show city overview zoom.
-      map.setCenter([c.lon, c.lat])
-      map.setZoom(12)
+      const key = `city:${city.activeSlug}`
+      if (key !== lastSearchCenterKey) {
+        lastSearchCenterKey = key
+        map.setCenter([c.lon, c.lat])
+        map.setZoom(12)
+      }
     }
   }
 
@@ -623,6 +748,7 @@ onUnmounted(() => {
   pickPopup?.remove()
   pickPopup = null
   if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+  if (selectedStopHaloFrame != null) { cancelAnimationFrame(selectedStopHaloFrame); selectedStopHaloFrame = null }
   if (map) {
     map.remove()
     map = null
@@ -644,10 +770,14 @@ watch(
 // Deliberately its own watcher, not folded into the one above - see
 // selectedStopId's prop doc comment for why it must not go through the
 // full render() (route mode's unconditional fitBounds would yank the
-// camera back to the whole route on every stop selection).
+// camera back to the whole route on every stop selection). renderStops()
+// itself has no camera side effects (only setSourceData calls), so it's
+// safe to call directly here - needed so the enlarge/dim treatment
+// (toStopFeature's 'selected'/'anySelected') updates even on a render()
+// cycle that wouldn't otherwise touch the stops sources.
 watch(
   () => props.selectedStopId,
-  () => { if (styleReady) updateSelectedStopMarker() },
+  () => { if (styleReady) { renderStops(); updateSelectedStopMarker() } },
 )
 
 watch(

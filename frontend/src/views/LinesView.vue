@@ -255,7 +255,7 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
     <!-- FULLSCREEN MAP MODE -->
     <template v-if="showMap">
       <div class="map-wrap">
-        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :city-stops="filteredCityStops" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
+        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :city-stops="filteredCityStops" :selected-stop-id="mapSelectedStop?.id" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
         <button type="button" class="btn btn--primary locate-btn" :disabled="locating" @click="toggleNearby">
           <IconMap v-if="nearbyRouteIds" :size="18" />
           <IconCurrentLocation v-else :size="18" />

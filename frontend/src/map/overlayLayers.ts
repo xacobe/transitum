@@ -31,6 +31,11 @@ const STOPS_CLUSTER_LAYER  = 'mm-stops-cluster'
 const STOPS_COUNT_LAYER    = 'mm-stops-count'
 const STOPS_POINT_LAYER    = 'mm-stops-point'
 
+// Search mode: burst halo + enlarged icon for the currently selected stop
+export const STOPS_SELECTED_SOURCE = 'mm-stops-selected'
+const STOPS_SELECTED_LAYER = 'mm-stops-selected-halo'
+const STOPS_SELECTED_ICON_LAYER = 'mm-stops-selected-icon'
+
 // Network mode: every city stop as a background layer, deliberately not
 // clustered (no bubble/count UI) - invisible zoomed out over most of the
 // city, individual mode icons appear past minzoom (see STOPS_NETWORK_LAYER).
@@ -156,6 +161,30 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     },
   })
 
+  // ── Selected-stop halo (search mode) ──────────────────────────────────────
+  // A GL circle layer, not an HTML marker - it shares the exact same
+  // projected coordinate as the stop's own icon (both read from a feature at
+  // [lon, lat]), so it can't drift off-center the way overlaying a separate
+  // HTML element on the WebGL canvas could. Animated by rewriting this
+  // source's single feature's radius/opacity every frame (see MiniMap.vue's
+  // startSelectedStopHalo) - MapLibre has no native paint-property animation.
+  // Added before the icon layers below so the icon renders on top of it.
+  map.addSource(STOPS_SELECTED_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: STOPS_SELECTED_LAYER,
+    type: 'circle',
+    source: STOPS_SELECTED_SOURCE,
+    paint: {
+      'circle-radius': ['get', 'radius'],
+      'circle-color': ['get', 'color'],
+      'circle-opacity': ['get', 'opacity'],
+    },
+  })
+
   // ── Network stop source (network mode — all city stops, unclustered) ─────
   // No cluster bubbles here on purpose: zoomed out over most of the city
   // (viewing the network overview or a highlighted line) nothing shows at
@@ -178,6 +207,16 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
       'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 16, 0.75],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
+    },
+    // Same dim-the-rest treatment as STOPS_POINT_LAYER (search mode) - see
+    // its own comment for why the enlarge itself is a separate layer
+    // (STOPS_SELECTED_ICON_LAYER) instead of a case here too.
+    paint: {
+      'icon-opacity': ['case',
+        ['==', ['get', 'selected'], 1], 1,
+        ['==', ['get', 'anySelected'], 1], 0.35,
+        1,
+      ],
     },
   })
 
@@ -231,7 +270,12 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
   // from zoom 13. Icons are pre-rendered canvas sprites (colored circle +
   // white SVG icon), one per TransitMode, registered before this function is
   // called; 'icon' is set per-feature in toStopFeature() from the stop's own
-  // modes (see stopIconImg()).
+  // modes (see stopIconImg()). 'selected'/'anySelected' are also set there,
+  // from props.selectedStopId - every stop but the selected one dims while
+  // one is selected (the selected stop's own enlarged icon is a separate
+  // layer, STOPS_SELECTED_ICON_LAYER below - a style expression may only
+  // contain one zoom-based interpolate, so it can't also be this layer's
+  // size expression combined with a per-feature selected check).
   map.addLayer({
     id: STOPS_POINT_LAYER,
     type: 'symbol',
@@ -241,6 +285,31 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     layout: {
       'icon-image': ['get', 'icon'],
       'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 0.75],
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+    paint: {
+      'icon-opacity': ['case',
+        ['==', ['get', 'selected'], 1], 1,
+        ['==', ['get', 'anySelected'], 1], 0.35,
+        1,
+      ],
+    },
+  })
+
+  // Enlarged icon for the selected stop, drawn on top of (and over) its own
+  // normal-sized icon above - same STOPS_SELECTED_SOURCE the burst halo
+  // circle uses (see MiniMap.vue's startSelectedStopHalo), which only ever
+  // holds the one selected stop's feature, so a plain zoom-interpolate here
+  // is enough - no per-feature case needed since every feature in this
+  // source already is the selected one.
+  map.addLayer({
+    id: STOPS_SELECTED_ICON_LAYER,
+    type: 'symbol',
+    source: STOPS_SELECTED_SOURCE,
+    layout: {
+      'icon-image': ['get', 'icon'],
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.75, 16, 1.05],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
     },
@@ -283,13 +352,14 @@ export function registerOverlayHandlers(
   // Tap an individual (unclustered) stop → same payload for the parent panel
   map.on('click', STOPS_POINT_LAYER, emitStopClick)
   map.on('click', STOPS_NETWORK_LAYER, emitStopClick)
+  map.on('click', STOPS_SELECTED_ICON_LAYER, emitStopClick)
 
   map.on('click', STOPS_CLUSTER_LAYER, onClusterClick)
   // The count label (symbol layer) sits on top of the circle and can swallow the
   // click before it reaches STOPS_CLUSTER_LAYER — register the same handler on it.
   map.on('click', STOPS_COUNT_LAYER, onClusterClick)
 
-  for (const layer of [STOPS_LAYER, NEARBY_STOPS_LAYER, STOPS_CLUSTER_LAYER, STOPS_COUNT_LAYER, STOPS_POINT_LAYER, STOPS_NETWORK_LAYER]) {
+  for (const layer of [STOPS_LAYER, NEARBY_STOPS_LAYER, STOPS_CLUSTER_LAYER, STOPS_COUNT_LAYER, STOPS_POINT_LAYER, STOPS_NETWORK_LAYER, STOPS_SELECTED_ICON_LAYER]) {
     map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = '' })
   }
