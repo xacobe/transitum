@@ -47,6 +47,15 @@ docker compose --env-file config/.env up routing-serve   # separately, for offli
 
 → [Quick start](https://xacobe.github.io/transitum/guide/quick-start) for the full version, including trying the other example.
 
+## Running locally
+
+Once installed, start both servers day-to-day with:
+
+```bash
+docker compose --env-file config/.env up -d routing-serve   # → http://localhost:3001
+make dev                                                      # → http://localhost:5173
+```
+
 ## Documentation
 
 The full documentation lives at **[xacobe.github.io/transitum](https://xacobe.github.io/transitum/)**:
