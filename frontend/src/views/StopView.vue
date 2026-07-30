@@ -91,7 +91,16 @@ function load() {
 }
 
 onMounted(load)
-watch(() => route.params.stopId, load)
+watch(() => route.params.stopId, () => {
+  load()
+  // Navigating to a different stop (e.g. "View stop" from the accordion)
+  // closes whatever line was expanded here - otherwise it'd keep showing
+  // the previous stop's accordion state, which is confusing since the user
+  // just changed stops (per line-key coincidence it might not even match
+  // any line on the new stop). Makes the stop change itself unambiguous.
+  expandedLineKey.value = null
+  highlightedAccordionStop.value = null
+})
 watch(stop, () => {
   if (stop.value?.name) track('stop-viewed', { name: stop.value.name, city: city.activeSlug })
   if (stop.value) loadDepartures(stop.value.id, lines.value)

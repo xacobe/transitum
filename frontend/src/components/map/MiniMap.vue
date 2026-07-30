@@ -524,7 +524,25 @@ function render() {
     // empty (nothing drawn) whenever no line is expanded.
     setSourceData(ROUTE_SOURCE, simpleRouteFeatures(props.routeLegs))
     const c = city.activeCity.center
-    if (props.center) {
+    // A stop picked from LineStopsAccordion's list, not from tapping the
+    // map - unlike search/network mode's own selectedStopId (always a stop
+    // already visible on screen, since that's how it got selected), this
+    // one can be well outside the current view. Frame both this stop and
+    // the one being viewed together instead of just drawing an (possibly
+    // off-screen, so invisible) halo at its coordinates.
+    const selected = props.selectedStopId
+      ? props.stops.find((s) => s.id === props.selectedStopId)
+      : undefined
+    if (selected && props.center) {
+      const key = `${props.center[0]},${props.center[1]}|${selected.id}`
+      if (key !== lastStopFocusKey) {
+        lastStopFocusKey = key
+        map.fitBounds(
+          latLonArrayToBounds([props.center, [selected.lat, selected.lon]]),
+          { animate: false, padding: 60, maxZoom: 17 },
+        )
+      }
+    } else if (props.center) {
       const key = `${props.center[0]},${props.center[1]}`
       if (key !== lastStopFocusKey) {
         lastStopFocusKey = key
