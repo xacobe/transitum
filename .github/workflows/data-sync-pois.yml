@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Opt-in, not opt-out - see the matching condition in
+    # data-sync-routes.yml for why. Manual runs (workflow_dispatch) always
+    # work; the monthly schedule is a no-op until OSM_POIS_SYNC_ENABLED is
+    # set to "true" in Settings -> Actions -> Variables.
+    if: github.event_name == 'workflow_dispatch' || vars.OSM_POIS_SYNC_ENABLED == 'true'
 
     steps:
       - uses: actions/checkout@v4.2.2

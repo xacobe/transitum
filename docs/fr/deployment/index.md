@@ -49,6 +49,30 @@ ssh -L 8090:localhost:8090 root@<serveur>
 # puis ouvrir http://localhost:8090/_/ dans votre navigateur
 ```
 
+## Synchronisation automatique des données (optionnel)
+
+`data-sync-routes.yml` et `data-sync-pois.yml` (voir [Référence du
+pipeline](/fr/pipeline/#resynchronisation-automatique-ci) pour ce qu'ils
+font réellement) supposent ce même mode de déploiement auto-hébergé SSH +
+docker-compose, et sont désactivés par défaut — la planification
+quotidienne/mensuelle ne se déclenche que si un déploiement active
+explicitement l'option. Pour commencer à les utiliser :
+
+1. Ajoutez des secrets de dépôt (Settings → Secrets and variables →
+   Actions → Secrets) : `SSH_PRIVATE_KEY`, `SERVER_HOST`, `SERVER_USER` —
+   ce sur quoi l'étape de déploiement se connecte en SSH.
+2. Définissez `DEPLOY_PATH` comme variable de dépôt si ce n'est pas `~/app`.
+3. Définissez `OSM_ROUTES_SYNC_ENABLED` et/ou `OSM_POIS_SYNC_ENABLED` à
+   `true` (variables de dépôt) une fois prêt pour que la planification
+   s'exécute réellement — ou laissez-les non définies et déclenchez une
+   synchro ponctuelle manuellement depuis l'onglet Actions
+   (`workflow_dispatch` fonctionne toujours, activé ou non).
+
+Un mode de déploiement différent (pas SSH + docker-compose auto-hébergé)
+implique d'écrire votre propre workflow de synchro plutôt que de réutiliser
+ceux-ci — comme pour tout autre fichier CI appartenant au framework, voir
+[Mettre à jour depuis l'upstream](/fr/deployment/updating-from-upstream).
+
 ## Suite
 
 - **[Variables d'environnement](/fr/deployment/environment-variables)** —

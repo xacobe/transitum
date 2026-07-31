@@ -15,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Opt-in, not opt-out: this assumes a specific deploy story (self-hosted
+    # over SSH + docker-compose, see the "Deploy to server" step below) and
+    # a specific data flow (city data checked into this repo) that not
+    # every fork wants - same spirit as the analytics/custom backend
+    # extension points (frontend/src/custom/), which also default to off
+    # until a deployment deliberately activates them. Manual runs
+    # (workflow_dispatch) always work regardless, so a deployment can test
+    # this before committing to the nightly schedule; the schedule trigger
+    # itself is a no-op until OSM_ROUTES_SYNC_ENABLED is set to "true" in
+    # Settings -> Actions -> Variables.
+    if: github.event_name == 'workflow_dispatch' || vars.OSM_ROUTES_SYNC_ENABLED == 'true'
 
     steps:
       - uses: actions/checkout@v4.2.2
@@ -44,6 +55,13 @@ jobs:
 
       - name: Check for OSM route changes
         id: check
+        env:
+          # See the matching DEPLOY_PATH pattern in the deploy step below -
+          # a per-deployment tuning knob (how many OSM-synthetic cities it
+          # has, how conservative it wants to be with the shared public
+          # Overpass instance), set once in Settings -> Actions ->
+          # Variables instead of editing this file.
+          OSM_SYNC_SLEEP_SECONDS: ${{ vars.OSM_SYNC_SLEEP_SECONDS || '5' }}
         run: python3 pipeline/check_osm_routes.py
 
       - name: Resolve cities to regenerate

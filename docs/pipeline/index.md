@@ -56,6 +56,46 @@ Generate vector map tiles (requires Java 17+ and the OSM PBF at
 make tiles CITY=your-city
 ```
 
+## Automatic re-sync (CI)
+
+Two scheduled GitHub Actions workflows keep deployed data current without
+manual re-runs — `.github/workflows/data-sync-routes.yml` (daily, `0 2 * * *`)
+and `data-sync-pois.yml` (monthly, 1st of the month). Both are opt-in, not
+opt-out: their schedule trigger is a no-op until a deployment sets
+`OSM_ROUTES_SYNC_ENABLED` / `OSM_POIS_SYNC_ENABLED` to `true` (also a repo
+variable) — same reasoning as the analytics/custom-backend extension
+points, a fresh clone shouldn't start SSHing into a server nobody's
+configured yet. See [Deployment](/deployment/#automatic-data-sync-optional)
+for the full setup checklist (secrets, variables). Manual runs
+(`workflow_dispatch`) always work regardless of the flag, useful for
+trying either workflow once before committing to the schedule.
+
+Which cities get
+checked is already per-deployment (read from `config/cities/`), and the
+pause between each OSM-synthetic city's check is too — set an
+`OSM_SYNC_SLEEP_SECONDS` repo variable (Settings → Actions → Variables,
+same mechanism as `DEPLOY_PATH`, see [Deployment](/deployment/)) to tune it
+for how many such cities a deployment actually has, no need to edit the
+workflow file. The cron schedule itself is the one thing that can't follow
+that pattern — GitHub Actions only accepts a literal cron expression, not a
+variable — so changing daily to, say, every 3 days means either editing
+`data-sync-routes.yml` directly (accepted as a deliberate upstream
+divergence, same as any other framework-owned file), or disabling the
+schedule from the Actions tab and relying on the workflow's
+`workflow_dispatch` trigger (already wired up, with a `force_cities` input)
+for manual runs instead.
+
+The daily routes sync is cheaper than it sounds: `check_osm_routes.py`
+skips every official-GTFS city outright (they don't come from OSM, so
+there's nothing to check), and for the remaining OSM-synthetic ones it only
+runs a small incremental `out count;` Overpass query (relations changed
+since the last run) with a short pause between cities — not a full data
+pull. Only a city with actual detected changes goes through the heavier
+full regeneration (`osm_to_gtfs.py` onward) that same run. The monthly POI
+sync does touch every city (POIs always come from OSM, regardless of
+transit source) and runs the real `osm_to_pois.py` query each time, which
+is why it's monthly rather than nightly.
+
 ## Next
 
 - [City config schema](/pipeline/config-schema) — every field, in the

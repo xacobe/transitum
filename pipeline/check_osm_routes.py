@@ -11,6 +11,7 @@ where to look from.
 import json
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +22,17 @@ from overpass import area_filter, overpass_query
 ROOT = Path(__file__).parent.parent
 LAST_SYNC_FILE = ROOT / "data" / "cities" / "last-osm-sync.json"
 FALLBACK_SINCE = "2020-01-01T00:00:00Z"
+
+# Runs nightly (see .github/workflows/data-sync-routes.yml) against the
+# shared public Overpass instance - a short pause between each city's check
+# keeps this from firing several queries back-to-back. How many
+# OSM-synthetic cities a deployment actually has (and how conservative it
+# wants to be with a shared public server) is entirely per-deployment, so
+# this reads from the OSM_SYNC_SLEEP_SECONDS env var (the workflow passes
+# it from an OSM_SYNC_SLEEP_SECONDS repo variable) rather than being a
+# framework-wide constant - a deployment tunes it in GitHub's Settings ->
+# Actions -> Variables, no need to fork this file.
+SLEEP_BETWEEN_CITIES_SECONDS = int(os.environ.get("OSM_SYNC_SLEEP_SECONDS", "5"))
 
 
 def load_last_sync() -> dict:
@@ -93,6 +105,7 @@ def main() -> None:
         except Exception as e:
             print(f"  WARNING: check failed ({e}) — skipping to avoid false negatives", file=sys.stderr)
         last_sync[slug] = now
+        time.sleep(SLEEP_BETWEEN_CITIES_SECONDS)
 
     save_last_sync(last_sync)
 

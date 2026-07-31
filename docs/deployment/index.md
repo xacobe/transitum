@@ -46,6 +46,28 @@ ssh -L 8090:localhost:8090 root@<server>
 # then open http://localhost:8090/_/ in your browser
 ```
 
+## Automatic data sync (optional)
+
+`data-sync-routes.yml` and `data-sync-pois.yml` (see [Pipeline
+reference](/pipeline/#automatic-re-sync-ci) for what they actually do)
+assume this same self-hosted SSH + docker-compose deploy story, and are
+off by default — the nightly/monthly schedule only fires once a deployment
+opts in. To start using them:
+
+1. Add repo secrets (Settings → Secrets and variables → Actions →
+   Secrets): `SSH_PRIVATE_KEY`, `SERVER_HOST`, `SERVER_USER` — what the
+   deploy step SSHes into.
+2. Set `DEPLOY_PATH` as a repo variable if it's not `~/app`.
+3. Set `OSM_ROUTES_SYNC_ENABLED` and/or `OSM_POIS_SYNC_ENABLED` to `true`
+   (repo variables) once ready for the schedule to actually run — or leave
+   them unset and trigger a one-off sync manually from the Actions tab
+   (`workflow_dispatch` always works, on or off).
+
+A different deploy story (not self-hosted SSH + docker-compose) means
+writing your own sync workflow rather than reusing these — same as any
+other framework-owned CI file, see [Updating from
+upstream](/deployment/updating-from-upstream).
+
 ## Next
 
 - **[Environment variables](/deployment/environment-variables)** —
