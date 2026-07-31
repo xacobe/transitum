@@ -18,6 +18,7 @@ import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useOriginLocation } from '@/composables/useOriginLocation'
 import { useNavigation } from '@/composables/useNavigation'
 import { useTransitModeFilter } from '@/composables/useTransitModeFilter'
+import { useDeviceHeading } from '@/composables/useDeviceHeading'
 import { useCityStore } from '@/stores/city'
 import type { Stop } from '@/types'
 
@@ -33,6 +34,19 @@ const selectedStop   = ref<Stop | null>(null)
 const gpsPosition    = ref<[number, number] | null>(null)   // live GPS fix → pulse marker
 const pickedOrigin   = ref<{ lat: number; lon: number } | null>(null)  // map-pick → flag marker
 const locationDenied = ref(false)
+
+// Direction cone on the "you are here" dot. Android/desktop don't gate this
+// sensor behind any permission at all, so it just auto-attaches on mount -
+// no button needed. iOS does gate it, but only behind a prompt that must
+// fire inside a direct user tap, which nothing on this page offers; rather
+// than add a dedicated permission button just for iOS (confusing next to
+// the map's own zoom-to-north controls - easy to read as "point map
+// north" instead of "show which way I'm facing"), iOS simply doesn't get
+// the cone.
+const { supported: compassSupported, needsPermission: compassNeedsPermission, heading: compassHeading, requestPermission: requestCompass } = useDeviceHeading()
+onMounted(() => {
+  if (compassSupported && !compassNeedsPermission) requestCompass()
+})
 
 // navigator.standalone is true only on iOS when launched from the home screen.
 // In that context, geolocation permission must be granted in Safari first.
@@ -223,7 +237,7 @@ function onMapGeolocateError({ code }: { code: number }) {
   <div class="screen">
     <div class="map-zone">
       <!-- --map-ctrl-top-extra clears the top-bar (logo + settings button) -->
-      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :route-legs="mapRouteLegs" :selected-stop-id="selectedStop?.id" :user-position="gpsPosition ?? undefined" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
+      <MiniMap mode="search" pick-menu style="--map-ctrl-top-extra: 60px" :center="originCenter" :stops="filteredStops" :route-legs="mapRouteLegs" :selected-stop-id="selectedStop?.id" :user-position="gpsPosition ?? undefined" :heading-deg="compassHeading" :picked-point="pickedOrigin ?? undefined" @stop-click="openStop" @pick-origin="onPickOrigin" @pick-destination="onPickDestination" @geolocate="onMapGeolocate" @geolocate-error="onMapGeolocateError" />
       <div class="top-bar">
         <div class="top-bar-spacer" aria-hidden="true" />
         <LogoPill />

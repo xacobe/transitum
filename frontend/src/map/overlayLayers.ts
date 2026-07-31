@@ -47,10 +47,13 @@ export const STOPS_SELECTED_SOURCE = 'mm-stops-selected'
 const STOPS_SELECTED_LAYER = 'mm-stops-selected-halo'
 const STOPS_SELECTED_ICON_LAYER = 'mm-stops-selected-icon'
 
-// All modes: GPS "you are here" dot + pulsing ring
+// All modes: GPS "you are here" dot + pulsing ring + heading cone
+// (Android/desktop only - see useDeviceHeading.ts)
 export const USER_LOCATION_SOURCE = 'mm-user-location'
 const USER_LOCATION_PULSE_LAYER = 'mm-user-location-pulse'
 const USER_LOCATION_DOT_LAYER = 'mm-user-location-dot'
+const USER_LOCATION_CONE_LAYER = 'mm-user-location-cone'
+export const USER_LOCATION_CONE_IMG = 'user-location-cone'
 
 // Network mode: every city stop as a background layer, deliberately not
 // clustered (no bubble/count UI) - invisible zoomed out over most of the
@@ -428,13 +431,36 @@ export function initOverlayLayers(map: MapLibreMap, accentColor: string): void {
   // ── User location marker (GPS "you are here" dot) ────────────────────────
   // A GL layer instead of an HTML marker, same reasoning as the
   // selected-stop halo above: can't drift from the actual point the way an
-  // HTML element overlaid on the WebGL canvas could. One feature on this
-  // source carries radius/opacity, animated (the pulsing ring below).
-  // Added last so it draws on top of everything else, same as an HTML
-  // marker always did.
+  // HTML element overlaid on the WebGL canvas could, and compass ticks (see
+  // MiniMap.vue's headingDeg watcher) can fire many times a second -
+  // rewriting one feature's properties is far cheaper than tearing down
+  // and rebuilding an HTML marker on each one. One feature on this source
+  // carries radius/opacity (animated, the pulsing ring below),
+  // heading/hasHeading (the cone's rotation and visibility). Added last so
+  // it draws on top of everything else, same as an HTML marker always did.
   map.addSource(USER_LOCATION_SOURCE, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
+  })
+
+  // Cone first (bottom), so the ring/dot above sit visually in front of it.
+  map.addLayer({
+    id: USER_LOCATION_CONE_LAYER,
+    type: 'symbol',
+    source: USER_LOCATION_SOURCE,
+    layout: {
+      'icon-image': USER_LOCATION_CONE_IMG,
+      'icon-size': 1,
+      'icon-rotate': ['get', 'heading'],
+      'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+    // Only visible once a real compass reading exists - the feature (and
+    // this layer) still exist with plain GPS alone, just fully transparent.
+    paint: {
+      'icon-opacity': ['case', ['==', ['get', 'hasHeading'], 1], 1, 0],
+    },
   })
 
   map.addLayer({

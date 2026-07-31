@@ -146,3 +146,36 @@ export function drawPin(size: number, color: string, strokeWidth = 3): ImageData
   return ctx.getImageData(0, 0, w, h)
 }
 
+/**
+ * "Flashlight" heading cone for the user-location marker (see MiniMap.vue's
+ * user-location layers in overlayLayers.ts) - apex at the center (where the
+ * GPS dot sits), widening and fading toward the top edge. Drawn pointing
+ * up (0deg = north) so the layer's own `icon-rotate: ['get', 'heading']`
+ * can rotate it live to match the device compass reading - no need to
+ * redraw the sprite itself on every orientation tick, just the one number.
+ */
+export function drawHeadingCone(size: number, color: string): ImageData {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+
+  const cx = size / 2
+  const cy = size / 2
+  const leftX = size * 0.32
+  const rightX = size * 0.68
+
+  const gradient = ctx.createLinearGradient(0, cy, 0, 0)
+  gradient.addColorStop(0, `${color}aa`)
+  gradient.addColorStop(1, `${color}00`)
+
+  ctx.beginPath()
+  ctx.moveTo(cx, cy)
+  ctx.lineTo(leftX, 0)
+  ctx.lineTo(rightX, 0)
+  ctx.closePath()
+  ctx.fillStyle = gradient
+  ctx.fill()
+
+  return ctx.getImageData(0, 0, size, size)
+}

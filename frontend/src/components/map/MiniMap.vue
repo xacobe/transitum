@@ -17,7 +17,7 @@ import { useLineColor } from '@/composables/useLineColor'
 import { buildMapStyle } from '@/map/style'
 import { type LatLon, toLngLat, pointsToCoords, latLonArrayToBounds, paddedMaxBounds, cssVar } from '@/map/geometry'
 import { resolveTileUrl } from '@/map/tileSource'
-import { drawStopIcon, drawPin, drawFlagIcon, modeColor } from '@/map/stopIcon'
+import { drawStopIcon, drawHeadingCone, drawPin, drawFlagIcon, modeColor } from '@/map/stopIcon'
 import { pickStopIconMode } from '@/services/modeIconSvg'
 import { pickMenuElement, injectPickMenuStyles } from '@/map/markerElements'
 import {
@@ -25,7 +25,7 @@ import {
   STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, STOPS_SELECTED_SOURCE,
   CURRENT_STOP_SOURCE, NEARBY_STOPS_SOURCE, NEARBY_STOP_IMG, stopIconImg,
   ORIGIN_FLAG_SOURCE, ORIGIN_FLAG_IMG,
-  USER_LOCATION_SOURCE,
+  USER_LOCATION_SOURCE, USER_LOCATION_CONE_IMG,
   initOverlayLayers, registerOverlayHandlers,
 } from '@/map/overlayLayers'
 import type { MapLeg, TransitMode } from '@/types'
@@ -58,6 +58,12 @@ const props = withDefaults(defineProps<{
   selectedStopId?: string
   /** GPS position → pulsing dot (all modes) */
   userPosition?: [number, number]
+  /** Device compass heading in degrees (0 = north, clockwise) → direction
+   * cone behind the GPS dot, same as the marker itself: own lightweight
+   * update path below, not the main render() cycle (see
+   * updateUserLocationMarker's doc comment) - orientation events can fire
+   * many times a second. */
+  headingDeg?: number | null
   /** Manually picked origin → flag marker (search mode) */
   pickedPoint?: { lat: number; lon: number }
   /** Enable right-click / long-press pick-origin / pick-destination menu */
@@ -90,12 +96,15 @@ let geoCtrl: maplibregl.GeolocateControl | null = null
 let styleReady = false
 // GPS "you are here" marker: a GL layer (see overlayLayers.ts's
 // USER_LOCATION_SOURCE), not an HTML marker - continuously animated
-// (pulsing ring) by rewriting this one feature's properties every frame
-// instead of touching the DOM. userLocationCoords is what the running pulse
-// loop's own tick() reads each frame; updating it here doesn't restart the
+// (pulsing ring) and rotated (heading cone) by rewriting this one
+// feature's properties every frame instead of touching the DOM, since
+// compass ticks (see the headingDeg watcher below) can fire many times a
+// second. userLocationCoords/HeadingDeg are what the running pulse loop's
+// own tick() reads each frame; updating them here doesn't restart the
 // loop or touch the map directly.
 let userLocationPulseFrame: number | null = null
 let userLocationCoords: [number, number] | null = null // [lon, lat]
+let userLocationHeadingDeg: number | null = null
 // Stop mode: coordinate key of the stop last framed by render() - see its
 // "Stop mode" branch below.
 let lastStopFocusKey: string | null = null
@@ -201,6 +210,24 @@ async function loadOriginFlagIcon() {
 
   await originFlagPromise
   originFlagPromise = null
+}
+
+let userLocationConePromise: Promise<void> | null = null
+
+async function loadUserLocationConeIcon() {
+  if (!map) return
+  if (map.hasImage(USER_LOCATION_CONE_IMG)) return
+  if (userLocationConePromise) { await userLocationConePromise; return }
+
+  userLocationConePromise = (async () => {
+    const imageData = drawHeadingCone(180, cssVar('--color-accent'))
+    if (map && !map.hasImage(USER_LOCATION_CONE_IMG)) {
+      map.addImage(USER_LOCATION_CONE_IMG, imageData, { pixelRatio: 2 })
+    }
+  })()
+
+  await userLocationConePromise
+  userLocationConePromise = null
 }
 
 // ── Overlay source data ────────────────────────────────────────────────────
@@ -427,10 +454,10 @@ function stopUserLocationPulse() {
 }
 
 // Runs forever (not a one-shot burst like startSelectedStopHalo) while a
-// GPS position exists - rewrites the one feature's coordinates every
-// frame, so updateUserLocationMarker only ever needs to update the plain
-// userLocationCoords variable this reads, never touch the map directly or
-// restart the loop.
+// GPS position exists - rewrites the one feature's coordinates/heading
+// every frame, so updateUserLocationMarker/the headingDeg watcher only
+// ever need to update the plain userLocationCoords/HeadingDeg variables
+// this reads, never touch the map directly or restart the loop.
 function startUserLocationPulse() {
   if (userLocationPulseFrame != null) return // already running
   const durationMs = 2200
@@ -447,6 +474,8 @@ function startUserLocationPulse() {
         radius: minRadius + t * (maxRadius - minRadius),
         opacity: 0.35 * (1 - t),
         color: cssVar('--color-accent'),
+        heading: userLocationHeadingDeg ?? 0,
+        hasHeading: userLocationHeadingDeg != null ? 1 : 0,
       },
     }
     setSourceData(USER_LOCATION_SOURCE, [feature])
@@ -461,6 +490,7 @@ function updateUserLocationMarker() {
     return
   }
   userLocationCoords = toLngLat(props.userPosition)
+  userLocationHeadingDeg = props.headingDeg ?? null
   startUserLocationPulse()
 }
 
@@ -695,7 +725,9 @@ let overlayHandlersRegistered = false
 async function onStyleReady() {
   if (!map) return
   styleReady = true
-  await Promise.all([loadStopIcons(), loadNearbyStopIcon(), loadRouteToPinIcon(), loadOriginFlagIcon()])
+  await Promise.all([
+    loadStopIcons(), loadNearbyStopIcon(), loadRouteToPinIcon(), loadOriginFlagIcon(), loadUserLocationConeIcon(),
+  ])
   // Clusters mix stops of potentially several modes, so they use the app's
   // general accent color rather than any one mode's color.
   initOverlayLayers(map, cssVar('--color-accent'))
@@ -763,8 +795,8 @@ onMounted(async () => {
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
     // We draw our own "you are here" dot (props.userPosition, see
-    // updateUserLocationMarker) - without this, GeolocateControl's
-    // default showUserLocation:true also drew its own
+    // updateUserLocationMarker) with its own heading cone - without this,
+    // GeolocateControl's default showUserLocation:true also drew its own
     // native dot (class maplibregl-user-location-dot) at the same
     // coordinate, stacked invisibly behind/in front of ours. Also drops
     // showAccuracyCircle, which the type docs say is always off once this
@@ -870,6 +902,14 @@ watch(
 watch(
   () => props.selectedStopId,
   () => { if (styleReady) { renderStops(); updateSelectedStopMarker() } },
+)
+
+// Compass ticks can fire many times a second - this only updates the
+// variable startUserLocationPulse's already-running tick() reads each
+// frame (see its own doc comment), never touches the map directly.
+watch(
+  () => props.headingDeg,
+  (deg) => { userLocationHeadingDeg = deg ?? null },
 )
 
 watch(
