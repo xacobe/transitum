@@ -12,6 +12,7 @@ import trainSvg       from '@tabler/icons/outline/train.svg?raw'
 import ferrySvg       from '@tabler/icons/outline/ferry.svg?raw'
 import aerialLiftSvg  from '@tabler/icons/outline/aerial-lift.svg?raw'
 import mountainSvg    from '@tabler/icons/outline/mountain.svg?raw'
+import flagSvg        from '@tabler/icons/outline/flag-3.svg?raw'
 import { METRO_ICON_INNER_SVG, TRAM_ICON_INNER_SVG } from '@/services/modeIconSvg'
 import { cssVar } from '@/map/geometry'
 import type { TransitMode } from '@/types'
@@ -57,11 +58,13 @@ export function modeColor(mode: TransitMode): string {
   return cssVar(MODE_COLOR_VAR[mode])
 }
 
-export async function drawStopIcon(
+/** Colored circle with a white SVG icon centered inside - shared core for
+ * drawStopIcon (per-TransitMode icons) and drawFlagIcon (origin flag). */
+async function drawIconCircle(
   size: number,
   color: string,
   strokeWidth: number,
-  mode: TransitMode = 'bus',
+  svgRaw: string,
 ): Promise<ImageData> {
   const inner = Math.round(size * 0.52)
   const pad   = Math.round((size - inner) / 2)
@@ -79,7 +82,7 @@ export async function drawStopIcon(
   ctx.lineWidth = strokeWidth
   ctx.stroke()
 
-  const svgWhite = (MODE_SVG[mode] ?? busStopSvg).replace(/currentColor/g, '#fff')
+  const svgWhite = svgRaw.replace(/currentColor/g, '#fff')
   await new Promise<void>((resolve) => {
     const blob = new Blob([svgWhite], { type: 'image/svg+xml' })
     const url  = URL.createObjectURL(blob)
@@ -91,3 +94,55 @@ export async function drawStopIcon(
 
   return ctx.getImageData(0, 0, size, size)
 }
+
+export function drawStopIcon(
+  size: number,
+  color: string,
+  strokeWidth: number,
+  mode: TransitMode = 'bus',
+): Promise<ImageData> {
+  return drawIconCircle(size, color, strokeWidth, MODE_SVG[mode] ?? busStopSvg)
+}
+
+/** Flag marker for a manually picked origin (search mode). */
+export function drawFlagIcon(size: number, color: string, strokeWidth: number): Promise<ImageData> {
+  return drawIconCircle(size, color, strokeWidth, flagSvg)
+}
+
+/**
+ * Teardrop destination pin (route mode's "to" marker, see overlayLayers.ts's
+ * ROUTE_TO_LAYER) - a circle with a triangular point tangent to its bottom,
+ * built as one continuous path so the white stroke wraps the whole outline
+ * with no seam. `icon-anchor: 'bottom'` (set on the layer) places the tip,
+ * not the circle center, at the marker's actual coordinate.
+ */
+export function drawPin(size: number, color: string, strokeWidth = 3): ImageData {
+  const w = size
+  const h = Math.round(size * 1.3)
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+
+  const cx = w / 2
+  const r = w / 2 - strokeWidth
+  const cy = r + strokeWidth
+  const tipY = h - strokeWidth
+  const spread = Math.PI * 40 / 180 // how far the tangent points sit from the bottom (90°)
+  const leftAngle = Math.PI / 2 + spread
+  const rightAngle = Math.PI / 2 - spread
+
+  ctx.beginPath()
+  ctx.moveTo(cx, tipY)
+  ctx.lineTo(cx + r * Math.cos(leftAngle), cy + r * Math.sin(leftAngle))
+  ctx.arc(cx, cy, r, leftAngle, rightAngle, false) // long way round, through the top
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = strokeWidth
+  ctx.stroke()
+
+  return ctx.getImageData(0, 0, w, h)
+}
+

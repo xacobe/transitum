@@ -47,16 +47,20 @@ const locating = ref(false)
 // Set once "near me" is tapped - filters the badges-strip down to lines
 // with at least one stop within the city's own nearbyRadiusMeters (the
 // same distance used for nearby-stops elsewhere, e.g. useLocalStops.ts).
-// The map's own native GeolocateControl (triggered below) already frames
-// the user's position and draws its own "you are here" dot - this is just
-// the equivalent for the strip, which the control knows nothing about.
 // Keyed by routeIdentity(), not lineKey() - two distinct routes can share
 // an (agencyId, shortName) pair (see Route.id's own comment), and lineKey
 // would then mark both "near" as soon as either one was.
 const nearbyRouteIds = ref<Set<string> | null>(null)
+// The map's own native GeolocateControl frames the camera on its own
+// (still its job - see MiniMap's exposed triggerGeolocate), but drawing
+// the "you are here" dot itself is ours (see MiniMap's userPosition prop,
+// a GL layer rather than the control's own HTML marker - showUserLocation
+// is off for exactly that reason).
+const gpsPosition = ref<[number, number] | null>(null)
 
 function onGeolocate(pos: { lat: number; lon: number }) {
   locating.value = false
+  gpsPosition.value = [pos.lat, pos.lon]
   const radius = city.activeCity.nearbyRadiusMeters
   const nearby = new Set<string>()
   for (const route of routes.value) {
@@ -74,14 +78,17 @@ function onGeolocateError() {
 }
 
 // The same button doubles as the way out of "near me" mode - once active,
-// tapping it again just clears the filter instead of re-locating. Getting
-// the position, framing the map, and showing the "you are here" dot are
-// all the native GeolocateControl's own job (see MiniMap's exposed
+// tapping it again just clears the filter instead of re-locating. Framing
+// the map is the native GeolocateControl's own job (see MiniMap's exposed
 // triggerGeolocate) - this only starts that request and reacts to its
 // result via the geolocate/geolocate-error events below.
 function toggleNearby() {
   if (nearbyRouteIds.value) {
     nearbyRouteIds.value = null
+    // The control's own tracking stops here too (see the comment below on
+    // why we still turn it fully off) - no more live fixes coming, so the
+    // dot showing a now-stale position would be misleading.
+    gpsPosition.value = null
     // Turns the control fully off (it's ACTIVE_LOCK at this point, since a
     // successful geolocate is what got us into "near me" mode) before our
     // own resetView() moves the camera away. Skipping this left the control
@@ -249,7 +256,7 @@ function selectLineFromPanel(agencyId: string, shortName: string) {
     <!-- FULLSCREEN MAP MODE -->
     <template v-if="showMap">
       <div class="map-wrap">
-        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :city-stops="filteredCityStops" :selected-stop-id="mapSelectedStop?.id" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
+        <MiniMap ref="miniMap" mode="network" :route-legs="mapLegs" :highlighted-key="highlightedKey" :stops="highlightedStops" :city-stops="filteredCityStops" :selected-stop-id="mapSelectedStop?.id" :user-position="gpsPosition ?? undefined" :keep-view="keepMapView" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onGeolocate" @geolocate-error="onGeolocateError" />
         <button type="button" class="btn btn--primary locate-btn" :disabled="locating" @click="toggleNearby">
           <IconMap v-if="nearbyRouteIds" :size="18" />
           <IconCurrentLocation v-else :size="18" />

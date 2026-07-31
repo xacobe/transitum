@@ -32,6 +32,13 @@ const scheduleFor = ref<StopLine | null>(null)
 // a stop that can have a couple dozen lines passing through, and gives the
 // map below a single unambiguous line to draw (see expandedLineLegs).
 const expandedLineKey = ref<string | null>(null)
+// "You are here", set from the map's own geolocate button - MiniMap draws
+// it as a GL layer (see its userPosition prop), not the GeolocateControl's
+// own native marker, which is off (showUserLocation:false).
+const gpsPosition = ref<[number, number] | null>(null)
+function onMapGeolocate(pos: { lat: number; lon: number }) {
+  gpsPosition.value = [pos.lat, pos.lon]
+}
 import { useNavigation } from '@/composables/useNavigation'
 
 const route = useRoute()
@@ -150,7 +157,7 @@ function goBack() {
     </div>
 
     <div class="map-wrap">
-      <MiniMap mode="stop" :center="stopCenter" :stops="mapStops" :route-legs="expandedLineLegs" :selected-stop-id="highlightedAccordionStop?.id" @stop-click="(s) => openStop(s.id)" />
+      <MiniMap mode="stop" :center="stopCenter" :stops="mapStops" :route-legs="expandedLineLegs" :selected-stop-id="highlightedAccordionStop?.id" :user-position="gpsPosition ?? undefined" @stop-click="(s) => openStop(s.id)" @geolocate="onMapGeolocate" />
     </div>
 
     <div class="actions">

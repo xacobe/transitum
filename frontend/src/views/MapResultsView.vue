@@ -91,6 +91,14 @@ watch(itineraries, () => {
 
 const mapRouteLegs = computed(() => activeItinerary.value?.mapLegs ?? [])
 
+// "You are here", set from the map's own geolocate button - MiniMap draws
+// it as a GL layer (see its userPosition prop), not the GeolocateControl's
+// own native marker, which is off (showUserLocation:false).
+const gpsPosition = ref<[number, number] | null>(null)
+function onMapGeolocate(pos: { lat: number; lon: number }) {
+  gpsPosition.value = [pos.lat, pos.lon]
+}
+
 function viewOnList() {
   router.push({
     name: 'listResults',
@@ -153,8 +161,10 @@ function onPickDestination(pt: { lat: number; lon: number }) {
         :from="fromPoint ?? undefined"
         :to="toPoint ?? undefined"
         :route-legs="mapRouteLegs"
+        :user-position="gpsPosition ?? undefined"
         @pick-origin="onPickOrigin"
         @pick-destination="onPickDestination"
+        @geolocate="onMapGeolocate"
       />
     </div>
 

@@ -15,17 +15,17 @@ import { useThemeStore } from '@/stores/theme'
 import { useCityStore } from '@/stores/city'
 import { useLineColor } from '@/composables/useLineColor'
 import { buildMapStyle } from '@/map/style'
-import { type LatLon, toLngLat, pointsToCoords, latLonArrayToBounds, cssVar } from '@/map/geometry'
+import { type LatLon, toLngLat, pointsToCoords, latLonArrayToBounds, paddedMaxBounds, cssVar } from '@/map/geometry'
 import { resolveTileUrl } from '@/map/tileSource'
-import { drawStopIcon, modeColor } from '@/map/stopIcon'
+import { drawStopIcon, drawPin, drawFlagIcon, modeColor } from '@/map/stopIcon'
 import { pickStopIconMode } from '@/services/modeIconSvg'
+import { pickMenuElement, injectPickMenuStyles } from '@/map/markerElements'
 import {
-  pulsingDotElement, pinElement, solidDotElement, originFlagElement, busStopElement,
-  pickMenuElement, injectMarkerStyles,
-} from '@/map/markerElements'
-import {
-  ROUTE_SOURCE, STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, STOPS_SELECTED_SOURCE,
-  NEARBY_STOPS_SOURCE, NEARBY_STOP_IMG, stopIconImg,
+  ROUTE_SOURCE, ROUTE_FROM_SOURCE, ROUTE_TO_SOURCE, ROUTE_TO_PIN_IMG,
+  STOPS_SOURCE, STOPS_MAP_SOURCE, STOPS_NETWORK_SOURCE, STOPS_SELECTED_SOURCE,
+  CURRENT_STOP_SOURCE, NEARBY_STOPS_SOURCE, NEARBY_STOP_IMG, stopIconImg,
+  ORIGIN_FLAG_SOURCE, ORIGIN_FLAG_IMG,
+  USER_LOCATION_SOURCE,
   initOverlayLayers, registerOverlayHandlers,
 } from '@/map/overlayLayers'
 import type { MapLeg, TransitMode } from '@/types'
@@ -36,8 +36,6 @@ const ALL_TRANSIT_MODES: TransitMode[] = [
   'tram', 'metro', 'rail', 'bus', 'ferry',
   'cable_tram', 'aerial_lift', 'funicular', 'trolleybus', 'monorail',
 ]
-
-type Anchor = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 const props = withDefaults(defineProps<{
   mode: 'search' | 'route' | 'stop' | 'network'
@@ -90,11 +88,14 @@ let map: maplibregl.Map | null = null
 // replicate (see LinesView's "near me" button).
 let geoCtrl: maplibregl.GeolocateControl | null = null
 let styleReady = false
-let markers: maplibregl.Marker[] = []
-// Kept separate from `markers` (which the main render() cycle bulk-clears
-// on every call) - see selectedStopId's own doc comment for why this has
-// its own lightweight update path instead.
-let selectedStopMarker: maplibregl.Marker | null = null
+// GPS "you are here" marker: a GL layer (see overlayLayers.ts's
+// USER_LOCATION_SOURCE), not an HTML marker - continuously animated
+// (pulsing ring) by rewriting this one feature's properties every frame
+// instead of touching the DOM. userLocationCoords is what the running pulse
+// loop's own tick() reads each frame; updating it here doesn't restart the
+// loop or touch the map directly.
+let userLocationPulseFrame: number | null = null
+let userLocationCoords: [number, number] | null = null // [lon, lat]
 // Stop mode: coordinate key of the stop last framed by render() - see its
 // "Stop mode" branch below.
 let lastStopFocusKey: string | null = null
@@ -166,11 +167,53 @@ async function loadNearbyStopIcon() {
   nearbyIconPromise = null
 }
 
+let routeToPinPromise: Promise<void> | null = null
+
+async function loadRouteToPinIcon() {
+  if (!map) return
+  if (map.hasImage(ROUTE_TO_PIN_IMG)) return
+  if (routeToPinPromise) { await routeToPinPromise; return }
+
+  routeToPinPromise = (async () => {
+    const imageData = drawPin(44, cssVar('--color-map-pin'))  // logical 22px × 2
+    if (map && !map.hasImage(ROUTE_TO_PIN_IMG)) {
+      map.addImage(ROUTE_TO_PIN_IMG, imageData, { pixelRatio: 2 })
+    }
+  })()
+
+  await routeToPinPromise
+  routeToPinPromise = null
+}
+
+let originFlagPromise: Promise<void> | null = null
+
+async function loadOriginFlagIcon() {
+  if (!map) return
+  if (map.hasImage(ORIGIN_FLAG_IMG)) return
+  if (originFlagPromise) { await originFlagPromise; return }
+
+  originFlagPromise = (async () => {
+    const imageData = await drawFlagIcon(68, cssVar('--color-accent'), 4)  // logical 34px × 2
+    if (map && !map.hasImage(ORIGIN_FLAG_IMG)) {
+      map.addImage(ORIGIN_FLAG_IMG, imageData, { pixelRatio: 2 })
+    }
+  })()
+
+  await originFlagPromise
+  originFlagPromise = null
+}
+
 // ── Overlay source data ────────────────────────────────────────────────────
 function setSourceData(sourceId: string, features: Feature[]) {
   if (!map || !styleReady) return
   const source = map.getSource(sourceId) as GeoJSONSource | undefined
   source?.setData({ type: 'FeatureCollection', features })
+}
+
+/** Plain point feature, no properties - for GL layers with fixed paint/layout
+ * (route mode's from/to endpoints), unlike toStopFeature's per-feature ones. */
+function pointFeature(point: LatLon): Feature<Point> {
+  return { type: 'Feature', geometry: { type: 'Point', coordinates: toLngLat(point) }, properties: {} }
 }
 
 function toStopFeature(
@@ -215,20 +258,6 @@ function simpleRouteFeatures(legs: MapLeg[]): Feature[] {
     }))
 }
 
-// ── Marker helpers ─────────────────────────────────────────────────────────
-function clearMarkers() {
-  markers.forEach(m => m.remove())
-  markers = []
-}
-
-function addMarker(el: HTMLElement, lngLat: [number, number], anchor: Anchor = 'center') {
-  const m = new maplibregl.Marker({ element: el, anchor })
-    .setLngLat(lngLat)
-    .addTo(map!)
-  markers.push(m)
-  return m
-}
-
 // ── Stop color ─────────────────────────────────────────────────────────────
 function stopDotColor() {
   if (props.mode === 'route' && props.routeLegs.length > 0) {
@@ -251,24 +280,28 @@ function stopDotColor() {
 function renderStops() {
   if (!map || !styleReady) return
 
-  clearMarkers()
-  renderFromTo()
-
   const sources: Record<string, Feature[]> = {
     [STOPS_SOURCE]: [],
     [STOPS_MAP_SOURCE]: [],
     [STOPS_NETWORK_SOURCE]: [],
+    [CURRENT_STOP_SOURCE]: [],
     [NEARBY_STOPS_SOURCE]: [],
+    [ROUTE_FROM_SOURCE]: [],
+    [ROUTE_TO_SOURCE]: [],
+    [ORIGIN_FLAG_SOURCE]: [],
   }
 
   if (props.mode === 'route') {
     // Intermediate stops as unclustered GL circles + sequence numbers.
-    // Endpoints keep their HTML markers (pulsing dot + pin from renderFromTo).
     const color = stopDotColor().bg
     const n = props.stops.length
     sources[STOPS_SOURCE] = props.stops
       .filter((_, i) => i !== 0 && i !== n - 1)
       .map((s, i) => toStopFeature(s, color, { seq: String(i + 2) }))
+    if (props.from && props.to) {
+      sources[ROUTE_FROM_SOURCE] = [pointFeature(props.from)]
+      sources[ROUTE_TO_SOURCE] = [pointFeature(props.to)]
+    }
   } else if (props.mode === 'network') {
     // Highlighted line stops as unclustered GL circles, plus every city
     // stop as an unclustered background layer (STOPS_NETWORK_SOURCE, not
@@ -282,11 +315,16 @@ function renderStops() {
     // All city stops via the clustered GL source. Clustering is handled
     // natively by MapLibre — no per-feature JS needed.
     sources[STOPS_MAP_SOURCE] = props.stops.map((s) => toStopFeature(s, stopColor()))
-  } else if (props.mode === 'stop') {
-    // The current stop is the single HTML marker already placed by
-    // renderFromTo(); nearby stops (props.stops, if passed) are small muted
-    // bus-stop icons (see overlayLayers) - a quick spatial hint, not meant
-    // to compete with the main marker.
+    // Flag for an origin the user explicitly picked on the map.
+    if (props.pickedPoint) {
+      sources[ORIGIN_FLAG_SOURCE] = [pointFeature([props.pickedPoint.lat, props.pickedPoint.lon])]
+    }
+  } else if (props.mode === 'stop' && props.center) {
+    // The current stop's own marker (CURRENT_STOP_SOURCE), plus nearby
+    // stops (props.stops, if passed) as small muted bus-stop icons (see
+    // overlayLayers) - a quick spatial hint, not meant to compete with the
+    // main marker.
+    sources[CURRENT_STOP_SOURCE] = [toStopFeature({ lat: props.center[0], lon: props.center[1] }, stopColor())]
     sources[NEARBY_STOPS_SOURCE] = props.stops.map((s) => toStopFeature(s, ''))
   }
 
@@ -349,15 +387,11 @@ function startSelectedStopHalo(stop: { id?: string; name?: string; lat: number; 
   selectedStopHaloFrame = requestAnimationFrame(tick)
 }
 
-// Pulsing marker (route mode) / one-shot burst (search + network modes)
-// over whichever stop selectedStopId points at (see its prop doc comment) -
-// own marker variable and update path, deliberately outside
-// renderStops()/render() so selecting a stop never re-triggers route/
-// network mode's unconditional fitBounds.
+// One-shot burst (see startSelectedStopHalo) over whichever stop
+// selectedStopId points at, in every mode - own update path, deliberately
+// outside renderStops()/render() so selecting a stop never re-triggers
+// route/network mode's unconditional fitBounds.
 function updateSelectedStopMarker() {
-  selectedStopMarker?.remove()
-  selectedStopMarker = null
-
   // Network mode's own `stops` prop is only ever the highlighted line's
   // stops (or empty) - a stop picked from the city-wide background layer
   // (cityStops) needs its own fallback lookup there.
@@ -371,47 +405,63 @@ function updateSelectedStopMarker() {
     return
   }
 
-  // route mode keeps the pulsing HTML marker below; every other mode (and
-  // any future one) gets the GL halo/enlarge treatment.
-  if (props.mode !== 'route') {
-    // Only replay the burst when the selection actually changed - this runs
-    // on every render() cycle (any prop change), not just an actual pick.
-    if (props.selectedStopId !== lastSelectedStopKey) {
-      lastSelectedStopKey = props.selectedStopId ?? null
-      startSelectedStopHalo(stop)
-    }
-    return
+  // Every mode gets the same GL halo/enlarge treatment - route mode used
+  // to be the one exception (its own HTML pulsingDotElement marker), but
+  // stopDotColor() already resolves the right color for it (the active
+  // route leg's own color), so there was no real reason for the split.
+  // Only replay the burst when the selection actually changed - this runs
+  // on every render() cycle (any prop change), not just an actual pick.
+  if (props.selectedStopId !== lastSelectedStopKey) {
+    lastSelectedStopKey = props.selectedStopId ?? null
+    startSelectedStopHalo(stop)
   }
-
-  const el = pulsingDotElement(stopDotColor().bg, 26, {
-    ringInset: '-10px', duration: '1.8s', shadow: '0 2px 8px rgba(0,0,0,.4)',
-  })
-  selectedStopMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(toLngLat([stop.lat, stop.lon]))
-    .addTo(map)
 }
 
-// ── From / To markers ──────────────────────────────────────────────────────
-function renderFromTo() {
-  const accent = cssVar('--color-accent')
-  const pin    = cssVar('--color-map-pin')
+function stopUserLocationPulse() {
+  if (userLocationPulseFrame != null) {
+    cancelAnimationFrame(userLocationPulseFrame)
+    userLocationPulseFrame = null
+  }
+  userLocationCoords = null
+  setSourceData(USER_LOCATION_SOURCE, [])
+}
 
-  if (props.mode === 'route' && props.from && props.to) {
-    addMarker(solidDotElement(accent), toLngLat(props.from), 'center')
-    addMarker(pinElement(pin), toLngLat(props.to), 'bottom')
-  } else if (props.mode === 'stop' && props.center) {
-    addMarker(busStopElement(stopColor(), () => {}), toLngLat(props.center), 'center')
-  } else if (props.mode === 'search') {
-    // Flag for an origin the user explicitly picked on the map.
-    if (props.pickedPoint) {
-      addMarker(originFlagElement(accent), toLngLat([props.pickedPoint.lat, props.pickedPoint.lon]), 'center')
+// Runs forever (not a one-shot burst like startSelectedStopHalo) while a
+// GPS position exists - rewrites the one feature's coordinates every
+// frame, so updateUserLocationMarker only ever needs to update the plain
+// userLocationCoords variable this reads, never touch the map directly or
+// restart the loop.
+function startUserLocationPulse() {
+  if (userLocationPulseFrame != null) return // already running
+  const durationMs = 2200
+  const minRadius = 8
+  const maxRadius = 22
+
+  function tick(now: number) {
+    if (!userLocationCoords) { userLocationPulseFrame = null; return }
+    const t = (now % durationMs) / durationMs
+    const feature: Feature<Point> = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: userLocationCoords },
+      properties: {
+        radius: minRadius + t * (maxRadius - minRadius),
+        opacity: 0.35 * (1 - t),
+        color: cssVar('--color-accent'),
+      },
     }
+    setSourceData(USER_LOCATION_SOURCE, [feature])
+    userLocationPulseFrame = requestAnimationFrame(tick)
   }
+  userLocationPulseFrame = requestAnimationFrame(tick)
+}
 
-  // All modes: pulse marker for the user's actual GPS position.
-  if (props.userPosition) {
-    addMarker(pulsingDotElement(accent, 18), toLngLat(props.userPosition), 'center')
+function updateUserLocationMarker() {
+  if (!map || !styleReady || !props.userPosition) {
+    stopUserLocationPulse()
+    return
   }
+  userLocationCoords = toLngLat(props.userPosition)
+  startUserLocationPulse()
 }
 
 // ── Main render ────────────────────────────────────────────────────────────
@@ -419,9 +469,6 @@ function render() {
   if (!map || !styleReady) return
 
   map.resize() // recalculate viewport if container changed size
-
-  clearMarkers()
-  renderFromTo()
 
   // ── Route mode ────────────────────────────────────────────────────────────
   if (props.mode === 'route' && props.from && props.to) {
@@ -594,11 +641,12 @@ function render() {
 
   renderStops()
   updateSelectedStopMarker()
+  updateUserLocationMarker()
 }
 
 // ── Pick-location context menu ────────────────────────────────────────────
 // Opens a small floating popup at the tapped coordinates with two actions.
-// CSS for the popup content is injected once (see injectMarkerStyles).
+// CSS for the popup content is injected once (see injectPickMenuStyles).
 function showPickMenu(lng: number, lat: number) {
   if (!map || !props.pickMenu) return
   pickPopup?.remove()
@@ -647,7 +695,7 @@ let overlayHandlersRegistered = false
 async function onStyleReady() {
   if (!map) return
   styleReady = true
-  await Promise.all([loadStopIcons(), loadNearbyStopIcon()])
+  await Promise.all([loadStopIcons(), loadNearbyStopIcon(), loadRouteToPinIcon(), loadOriginFlagIcon()])
   // Clusters mix stops of potentially several modes, so they use the app's
   // general accent color rather than any one mode's color.
   initOverlayLayers(map, cssVar('--color-accent'))
@@ -659,7 +707,7 @@ async function onStyleReady() {
 }
 
 onMounted(async () => {
-  injectMarkerStyles()
+  injectPickMenuStyles()
 
   // Resolve tile source before creating the map so the correct URL/key
   // is set from the first frame — avoids a style reload after mount.
@@ -683,6 +731,14 @@ onMounted(async () => {
     center: toLngLat(initialCenter),
     zoom: initialZoom,
     minZoom: 8,
+    // Keeps panning inside the city's own tile coverage (padded a bit, see
+    // paddedMaxBounds) - past it there's nothing but blank basemap anyway.
+    // Updated on city switch below, since the map instance itself persists
+    // across those (setStyle/setCenter), not recreated.
+    maxBounds: paddedMaxBounds(city.activeCity.tileBbox),
+    // Smooths tile/layer transitions on zoom and style swaps (theme/city
+    // switches) - purely cosmetic, negligible cost.
+    fadeDuration: 300,
     attributionControl: false,
     // Disable unnecessary controls
     boxZoom: false,
@@ -695,26 +751,42 @@ onMounted(async () => {
   // All modes: zoom controls + scale bar at consistent positions.
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
   map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+  // Network mode only: the one view where seeing many lines at once in a
+  // small viewport actually benefits from going fullscreen.
+  if (props.mode === 'network') {
+    map.addControl(new maplibregl.FullscreenControl(), 'top-right')
+  }
 
   // All modes: geolocation button. search + network also emit events to the
   // parent so the rest of the app can react to the user's position.
   geoCtrl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
+    // We draw our own "you are here" dot (props.userPosition, see
+    // updateUserLocationMarker) - without this, GeolocateControl's
+    // default showUserLocation:true also drew its own
+    // native dot (class maplibregl-user-location-dot) at the same
+    // coordinate, stacked invisibly behind/in front of ours. Also drops
+    // showAccuracyCircle, which the type docs say is always off once this
+    // is false - not worth a native circle just to keep it.
+    showUserLocation: false,
     // Cap at zoom 14 in search/network modes so the 1.5 km nearby radius
     // (nearby stops in search mode, LinesView's "near me" filter in
     // network mode) stays visible instead of the library's own default,
     // which zooms in tighter than that.
     ...(props.mode === 'search' || props.mode === 'network' ? { fitBoundsOptions: { maxZoom: 14 } } : {}),
   })
-  if (props.mode === 'search' || props.mode === 'network') {
-    geoCtrl.on('geolocate', (e) => {
-      emit('geolocate', { lat: e.coords.latitude, lon: e.coords.longitude })
-    })
-    geoCtrl.on('error', (e) => {
-      emit('geolocate-error', { code: e.code })
-    })
-  }
+  // Every mode forwards these, not just search/network: with
+  // showUserLocation off, drawing the "you are here" marker at all now
+  // depends entirely on the parent hearing this and passing a position
+  // back in via userPosition - route/stop mode's geolocate button would
+  // otherwise pan the camera there and show nothing.
+  geoCtrl.on('geolocate', (e) => {
+    emit('geolocate', { lat: e.coords.latitude, lon: e.coords.longitude })
+  })
+  geoCtrl.on('error', (e) => {
+    emit('geolocate-error', { code: e.code })
+  })
   map.addControl(geoCtrl, 'top-right')
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
 
@@ -758,6 +830,7 @@ onUnmounted(() => {
   pickPopup = null
   if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
   if (selectedStopHaloFrame != null) { cancelAnimationFrame(selectedStopHaloFrame); selectedStopHaloFrame = null }
+  if (userLocationPulseFrame != null) { cancelAnimationFrame(userLocationPulseFrame); userLocationPulseFrame = null }
   if (map) {
     map.remove()
     map = null
@@ -766,24 +839,23 @@ onUnmounted(() => {
   geoCtrl = null
 })
 
+// No `deep` - every one of these props is always reassigned wholesale by
+// its caller (fresh computed(), never mutated in place - e.g. LinesView's
+// filteredCityStops), so plain dependency tracking on each props.xxx
+// access already re-runs this on every real change; `deep` would only add
+// an O(n) traversal into props.stops/cityStops (network mode's city-wide
+// background layer, easily 1,000+ stops) for no extra correctness.
+// cityStops was briefly split into its own separate watch() to dodge that
+// cost, but that meant two watch() registrations reacting to the same
+// tick's change (e.g. LinesView's line-badge tap changes highlightedKey
+// and filteredCityStops together) - two independent render() calls, not
+// one. One watcher stays the right unit of work here.
 watch(
   () => [
     props.mode, props.center, props.from, props.to,
-    props.routeLegs, props.stops, props.highlightedKey,
+    props.routeLegs, props.stops, props.cityStops, props.highlightedKey,
     props.userPosition, props.pickedPoint,
   ],
-  () => { if (styleReady) render() },
-  { deep: true },
-)
-
-// cityStops (network mode's city-wide background layer) is its own,
-// shallow watcher: it's always reassigned wholesale (see LinesView's
-// filteredCityStops), never mutated in place, and can be 1,000+ stops -
-// deep-diffing every one of them on each render just to detect the same
-// "did the reference change" signal a shallow watch gives for free would
-// be pure overhead at that size.
-watch(
-  () => props.cityStops,
   () => { if (styleReady) render() },
 )
 
@@ -817,6 +889,10 @@ watch(
   () => city.activeSlug,
   async () => {
     if (!map) return
+    // Widen the pan limit to the new city's own extent *before* moving the
+    // camera there - the old city's (likely non-overlapping) maxBounds
+    // would otherwise clamp the upcoming setCenter right back into itself.
+    map.setMaxBounds(paddedMaxBounds(city.activeCity.tileBbox))
     const c = city.activeCity.center
     // Center on the newly selected city immediately (before tiles load).
     map.setCenter([c.lon, c.lat])

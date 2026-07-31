@@ -5,7 +5,7 @@
  * MapLibre and GeoJSON use [lon, lat]. Always convert at the boundary.
  */
 import { latLonBounds } from '@/services/geo'
-import type { MapLeg, Route, RouteDirection } from '@/types'
+import type { BoundingBox, MapLeg, Route, RouteDirection } from '@/types'
 
 export type LatLon = [number, number]
 
@@ -19,6 +19,22 @@ export function pointsToCoords(points: LatLon[]): [number, number][] {
 export function latLonArrayToBounds(points: LatLon[]): [[number, number], [number, number]] {
   const { minLat, maxLat, minLon, maxLon } = latLonBounds(points)
   return [[minLon, minLat], [maxLon, maxLat]]
+}
+
+/** A city's own tileBbox (already sized to cover every mode's full network
+ * extent, outlier intercommunal routes included - see docs/cities/
+ * multi-source.md), widened a bit further so hitting the pan limit doesn't
+ * feel like slamming into a wall right at the edge of what's actually
+ * rendered. Used as MiniMap's own maxBounds - keeps the user from panning
+ * into the empty basemap surrounding the city, without needing its own
+ * separate, hand-maintained per-city box just for this. */
+export function paddedMaxBounds(bbox: BoundingBox, paddingFactor = 0.15): [[number, number], [number, number]] {
+  const padLon = (bbox.maxLon - bbox.minLon) * paddingFactor
+  const padLat = (bbox.maxLat - bbox.minLat) * paddingFactor
+  return [
+    [bbox.minLon - padLon, bbox.minLat - padLat],
+    [bbox.maxLon + padLon, bbox.maxLat + padLat],
+  ]
 }
 
 /** The base MapLeg shape every "draw this line on the map" call site needs

@@ -33,6 +33,7 @@ const selectedStop   = ref<Stop | null>(null)
 const gpsPosition    = ref<[number, number] | null>(null)   // live GPS fix → pulse marker
 const pickedOrigin   = ref<{ lat: number; lon: number } | null>(null)  // map-pick → flag marker
 const locationDenied = ref(false)
+
 // navigator.standalone is true only on iOS when launched from the home screen.
 // In that context, geolocation permission must be granted in Safari first.
 const isIosPwa =
@@ -104,7 +105,12 @@ const allRoutesLegs = computed<MapLeg[]>(() =>
     return [toMapLeg(route, dir)]
   }),
 )
-const mapRouteLegs = computed(() => (showRoutes.value ? allRoutesLegs.value : selectedStopLegs.value))
+// A selected stop always wins over the "show all lines" toggle - same
+// declutter effect as when that toggle is off, so picking a stop reads the
+// same way regardless of whether the full network was showing a moment ago.
+const mapRouteLegs = computed(() =>
+  selectedStop.value ? selectedStopLegs.value : (showRoutes.value ? allRoutesLegs.value : []),
+)
 
 // stop id -> legs of every direction passing through it, built once per
 // allRoutes load rather than rescanning every route/direction on each stop

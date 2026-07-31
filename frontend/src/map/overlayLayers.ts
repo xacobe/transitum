@@ -1,6 +1,10 @@
 /**
  * Overlay sources/layers MiniMap draws on top of the basemap: route lines,
- * stop circles, clustered city stops and nearby-stop icons.
+ * stop circles, clustered city stops, nearby-stop icons, and every position
+ * marker (route endpoints, the current stop, a picked origin, GPS) - all GL
+ * layers rather than HTML markers, so none of them can drift off the
+ * canvas's own projected coordinate the way an HTML element overlaid on it
+ * could.
  *
  * Split in two because they have different lifetimes:
  *  - initOverlayLayers(): sources + layers. setStyle() clears all of them, so
@@ -20,6 +24,13 @@ export const ROUTE_SOURCE  = 'mm-routes'
 const ROUTE_BUS_ID  = 'mm-routes-bus'
 const ROUTE_WALK_ID = 'mm-routes-walk'
 
+// Route mode: origin dot + destination pin
+export const ROUTE_FROM_SOURCE = 'mm-route-from'
+const ROUTE_FROM_LAYER = 'mm-route-from-dot'
+export const ROUTE_TO_SOURCE = 'mm-route-to'
+const ROUTE_TO_LAYER = 'mm-route-to-pin'
+export const ROUTE_TO_PIN_IMG = 'route-to-pin'
+
 // Route / network mode: unclustered sequential stop markers
 export const STOPS_SOURCE  = 'mm-stops'
 const STOPS_LAYER   = 'mm-stops-circle'
@@ -36,16 +47,29 @@ export const STOPS_SELECTED_SOURCE = 'mm-stops-selected'
 const STOPS_SELECTED_LAYER = 'mm-stops-selected-halo'
 const STOPS_SELECTED_ICON_LAYER = 'mm-stops-selected-icon'
 
+// All modes: GPS "you are here" dot + pulsing ring
+export const USER_LOCATION_SOURCE = 'mm-user-location'
+const USER_LOCATION_PULSE_LAYER = 'mm-user-location-pulse'
+const USER_LOCATION_DOT_LAYER = 'mm-user-location-dot'
+
 // Network mode: every city stop as a background layer, deliberately not
 // clustered (no bubble/count UI) - invisible zoomed out over most of the
 // city, individual mode icons appear past minzoom (see STOPS_NETWORK_LAYER).
 export const STOPS_NETWORK_SOURCE = 'mm-stops-network'
 const STOPS_NETWORK_LAYER  = 'mm-stops-network-point'
 
-// Stop mode: nearby-stop dots, small + muted, with the same bus-stop icon
-// as the main "you are here" marker so they read as stops at a glance too.
+// Stop mode: the stop currently being viewed (its own prominent marker) and
+// nearby stops (small + muted, same bus-stop icon so they still read as
+// stops at a glance).
+export const CURRENT_STOP_SOURCE = 'mm-current-stop'
+const CURRENT_STOP_LAYER = 'mm-current-stop-icon'
 export const NEARBY_STOPS_SOURCE = 'mm-nearby-stops'
 const NEARBY_STOPS_LAYER  = 'mm-nearby-stops-icon'
+
+// Search mode: flag for an origin the user explicitly picked on the map.
+export const ORIGIN_FLAG_SOURCE = 'mm-origin-flag'
+const ORIGIN_FLAG_LAYER = 'mm-origin-flag-icon'
+export const ORIGIN_FLAG_IMG = 'origin-flag-icon'
 
 // Named canvas sprites (registered in MiniMap via drawStopIcon + addImage).
 // One per TransitMode for the main "all city stops" sprite, so a metro/tram/
@@ -61,11 +85,12 @@ export interface StopClickPayload { id: string; name: string; lat: number; lon: 
 
 /**
  * Adds all overlay sources and layers. Must run after the style is ready and
- * after the BUS_STOP_IMG / NEARBY_STOP_IMG sprites are registered (the symbol
- * layers reference them). `clusterColor` is read at call time so a style
- * reload after a theme switch picks up the new theme's stop color.
+ * after the BUS_STOP_IMG / NEARBY_STOP_IMG / ROUTE_TO_PIN_IMG sprites are
+ * registered (the symbol layers reference them). `accentColor` is read at
+ * call time so a style reload after a theme switch picks up the new theme's
+ * accent color.
  */
-export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void {
+export function initOverlayLayers(map: MapLibreMap, accentColor: string): void {
   if (map.getSource(ROUTE_SOURCE)) return // already added (idempotent guard)
 
   map.addSource(ROUTE_SOURCE, {
@@ -106,6 +131,46 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     },
   })
 
+  // ── Route endpoints (route mode's "from"/"to" markers) ────────────────────
+  // GL layers instead of HTML markers, same reasoning as the other
+  // conversions in this file: they share the canvas's own projected
+  // coordinate exactly, so they can't drift the way an HTML element
+  // overlaid on it could.
+  map.addSource(ROUTE_FROM_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: ROUTE_FROM_LAYER,
+    type: 'circle',
+    source: ROUTE_FROM_SOURCE,
+    paint: {
+      'circle-radius': 9,
+      'circle-color': accentColor,
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 3,
+    },
+  })
+
+  map.addSource(ROUTE_TO_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: ROUTE_TO_LAYER,
+    type: 'symbol',
+    source: ROUTE_TO_SOURCE,
+    layout: {
+      'icon-image': ROUTE_TO_PIN_IMG,
+      'icon-size': 0.5,
+      'icon-anchor': 'bottom',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+  })
+
   // ── Unclustered stop source (route + network modes) ──────────────────────
   map.addSource(STOPS_SOURCE, {
     type: 'geojson',
@@ -140,6 +205,31 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     paint: { 'text-color': '#fff' },
   })
 
+  // ── Current-stop source (stop mode) ───────────────────────────────────────
+  // The stop being viewed, reusing the already-registered stopIconImg('bus')
+  // sprite (see MiniMap.vue's loadStopIcons) - its color (--color-mode-bus)
+  // matches --color-stop-dot exactly (see tokens.css), so this looks
+  // identical to the old HTML marker it replaces without needing its own
+  // sprite. A GL layer for the same reason as the selected-stop halo/user
+  // location marker above: it can't drift off the canvas's own projected
+  // coordinate the way an HTML element overlaid on it could.
+  map.addSource(CURRENT_STOP_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: CURRENT_STOP_LAYER,
+    type: 'symbol',
+    source: CURRENT_STOP_SOURCE,
+    layout: {
+      'icon-image': stopIconImg('bus'),
+      'icon-size': 0.5,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+  })
+
   // ── Nearby-stop source (stop mode) ────────────────────────────────────────
   // Small muted bus-stop icons for stops near the one being viewed - a
   // dedicated source/layer (not the plain circles above) since route/network
@@ -156,6 +246,26 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     layout: {
       'icon-image': NEARBY_STOP_IMG,
       'icon-size': 0.87,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+  })
+
+  // ── Origin flag (search mode) ─────────────────────────────────────────────
+  // A manually picked origin, GL layer for the same drift-proofing reason as
+  // the other conversions in this file.
+  map.addSource(ORIGIN_FLAG_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: ORIGIN_FLAG_LAYER,
+    type: 'symbol',
+    source: ORIGIN_FLAG_SOURCE,
+    layout: {
+      'icon-image': ORIGIN_FLAG_IMG,
+      'icon-size': 0.5,
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
     },
@@ -238,7 +348,7 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
     source: STOPS_MAP_SOURCE,
     filter: ['has', 'point_count'],
     paint: {
-      'circle-color': clusterColor,
+      'circle-color': accentColor,
       'circle-opacity': 0.85,
       'circle-radius': [
         'step', ['get', 'point_count'],
@@ -312,6 +422,41 @@ export function initOverlayLayers(map: MapLibreMap, clusterColor: string): void 
       'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.75, 16, 1.05],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
+    },
+  })
+
+  // ── User location marker (GPS "you are here" dot) ────────────────────────
+  // A GL layer instead of an HTML marker, same reasoning as the
+  // selected-stop halo above: can't drift from the actual point the way an
+  // HTML element overlaid on the WebGL canvas could. One feature on this
+  // source carries radius/opacity, animated (the pulsing ring below).
+  // Added last so it draws on top of everything else, same as an HTML
+  // marker always did.
+  map.addSource(USER_LOCATION_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  })
+
+  map.addLayer({
+    id: USER_LOCATION_PULSE_LAYER,
+    type: 'circle',
+    source: USER_LOCATION_SOURCE,
+    paint: {
+      'circle-radius': ['get', 'radius'],
+      'circle-color': ['get', 'color'],
+      'circle-opacity': ['get', 'opacity'],
+    },
+  })
+
+  map.addLayer({
+    id: USER_LOCATION_DOT_LAYER,
+    type: 'circle',
+    source: USER_LOCATION_SOURCE,
+    paint: {
+      'circle-radius': 8,
+      'circle-color': ['get', 'color'],
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 2.5,
     },
   })
 }

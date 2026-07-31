@@ -25,6 +25,13 @@ const city = useCityStore()
 
 const { openStop, openLine, goBack: navGoBack } = useNavigation()
 const mapSelectedStop = ref<{ id: string; name: string } | null>(null)
+// "You are here", set from the map's own geolocate button - MiniMap draws
+// it as a GL layer (see its userPosition prop), not the GeolocateControl's
+// own native marker, which is off (showUserLocation:false).
+const gpsPosition = ref<[number, number] | null>(null)
+function onMapGeolocate(pos: { lat: number; lon: number }) {
+  gpsPosition.value = [pos.lat, pos.lon]
+}
 
 // Reserves exactly as much extra scroll room below the list as
 // MapStopPanel is tall, so the list's true bottom lines up with the
@@ -150,7 +157,7 @@ function toggleFavorite() {
     </div>
 
     <div v-if="line" class="map-wrap">
-      <MiniMap mode="route" :from="fromPoint" :to="toPoint" :route-legs="mapRouteLegs" :stops="activeDirection?.stops ?? []" :selected-stop-id="mapSelectedStop?.id" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" />
+      <MiniMap mode="route" :from="fromPoint" :to="toPoint" :route-legs="mapRouteLegs" :stops="activeDirection?.stops ?? []" :selected-stop-id="mapSelectedStop?.id" :user-position="gpsPosition ?? undefined" @stop-click="(s) => mapSelectedStop = { id: s.id ?? '', name: s.name ?? '' }" @geolocate="onMapGeolocate" />
     </div>
 
     <div
