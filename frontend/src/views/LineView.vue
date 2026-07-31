@@ -62,7 +62,8 @@ watch(mapSelectedStop, (stop) => {
 
 onUnmounted(() => panelObserver?.disconnect())
 const shortNameRef = computed(() => route.params.shortName as string)
-const { route: line, loading } = useRouteDetail(shortNameRef)
+const agencyIdRef = computed(() => route.params.agencyId as string)
+const { route: line, loading } = useRouteDetail(shortNameRef, agencyIdRef)
 const directionIndex = ref(0)
 watch(line, () => {
   if (line.value) track('line-viewed', { line: line.value.shortName, name: line.value.longName, city: city.activeSlug })
@@ -216,7 +217,7 @@ function toggleFavorite() {
       :current-line-short-name="line?.shortName"
       @close="mapSelectedStop = null"
       @view-stop="(id) => { mapSelectedStop = null; openStop(id) }"
-      @select-line="(agencyId, shortName) => { mapSelectedStop = null; openLine(shortName) }"
+      @select-line="(agencyId, shortName) => { mapSelectedStop = null; openLine(shortName, agencyId) }"
     />
   </div>
 </template>

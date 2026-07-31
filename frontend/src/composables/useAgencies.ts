@@ -33,6 +33,15 @@ export function lineKey(agencyId: string | null | undefined, shortName: string):
   return `${agencyId ?? ''}::${shortName}`
 }
 
+/** Placeholder `/lines/:agencyId/:shortName` path segment for openLine()
+ * when the caller genuinely doesn't know the agencyId - a favorite saved
+ * before FavoriteLine.agencyId existed, the only realistic case (every
+ * other line-navigating call site has a real one on hand). useRouteDetail
+ * matches this by falling back to shortName alone, same residual risk
+ * (a same-agency shortName reuse) the rest of the app already accepts for
+ * this kind of stale local data - see FavoriteLine's matchesLine(). */
+export const UNKNOWN_AGENCY = '_'
+
 /** True unique identity for a routes.json entry - prefer this over lineKey()
  * whenever a full Route object is on hand. Falls back to lineKey() for data
  * generated before Route.id existed, which carries the same

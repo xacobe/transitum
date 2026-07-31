@@ -36,7 +36,7 @@ const { t } = useI18n()
       type="button"
       class="badge-btn"
       :aria-label="t('common.viewLine')"
-      @click.stop="openLine(leg.route?.shortName ?? '')"
+      @click.stop="openLine(leg.route?.shortName ?? '', agencyId)"
     >
       <LineBadge :short-name="leg.route?.shortName ?? '?'" :agency-id="agencyId" :size="28" />
     </button>

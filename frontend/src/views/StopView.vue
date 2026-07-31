@@ -7,7 +7,7 @@ import StopRow from '@/components/shared/StopRow.vue'
 import ListRow from '@/components/shared/ListRow.vue'
 import ServiceClosedNotice from '@/components/shared/ServiceClosedNotice.vue'
 import RowActionHint from '@/components/shared/RowActionHint.vue'
-import { useStopDetail } from '@/composables/useRouting'
+import { useStopDetail, groupStopLines } from '@/composables/useRouting'
 import { useUpcomingDepartures } from '@/composables/useUpcomingDepartures'
 import { useFrequency } from '@/composables/useFrequency'
 import { useFavoritesStore } from '@/stores/favorites'
@@ -124,6 +124,11 @@ function lineRowKey(line: StopLine): string {
   return `${lineKey(line.agencyId, line.shortName)}:${line.headsign ?? ''}`
 }
 
+// One row per line, not per direction - see groupStopLines's own doc
+// comment for why (a stop can genuinely have more than one boardable
+// direction of the same line, e.g. a dual-origin terminus).
+const groupedLines = computed(() => groupStopLines(lines.value))
+
 // Lines with a real published schedule open a modal with today's full
 // timetable at this stop (see LineScheduleModal) - a different need
 // (today's actual departure times) than the inline preview below, so left
@@ -205,19 +210,20 @@ function goBack() {
           <IconWifiOff :size="13" aria-hidden="true" />
           {{ t('stop.offlineData') }}
         </div>
-        <template v-for="line in lines" :key="lineRowKey(line)">
+        <template v-for="group in groupedLines" :key="lineRowKey(group.line)">
           <StopRow
-            :line="line"
-            :departures="departuresByLine[line.shortName]"
-            :expanded="expandedLineKey === lineRowKey(line)"
-            :class="{ 'row-expanded': expandedLineKey === lineRowKey(line) }"
-            @select="selectLine(line)"
+            :line="group.line"
+            :destination-label="group.destinationLabel"
+            :departures="departuresByLine[group.line.shortName]"
+            :expanded="expandedLineKey === lineRowKey(group.line)"
+            :class="{ 'row-expanded': expandedLineKey === lineRowKey(group.line) }"
+            @select="selectLine(group.line)"
           />
           <LineStopsAccordion
-            v-if="expandedLineKey === lineRowKey(line)"
-            :short-name="line.shortName"
-            :agency-id="line.agencyId ?? ''"
-            :headsign="line.headsign"
+            v-if="expandedLineKey === lineRowKey(group.line)"
+            :short-name="group.line.shortName"
+            :agency-id="group.line.agencyId ?? ''"
+            :headsign="group.line.headsign"
             :current-stop-id="stopId"
             @view-stop="openStop"
             @highlight-stop="highlightedAccordionStop = $event"

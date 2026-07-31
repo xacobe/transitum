@@ -31,7 +31,7 @@ useEscapeKey(close)
 
 function viewLine() {
   close()
-  openLine(props.shortName)
+  openLine(props.shortName, props.agencyId)
 }
 </script>
 

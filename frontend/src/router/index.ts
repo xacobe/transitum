@@ -40,7 +40,10 @@ const router = createRouter({
     },
     { path: p('listResults', '/list/results'), name: 'listResults', component: () => import('@/views/ListResultsView.vue') },
     { path: p('lines', '/lines'), name: 'lines', component: () => import('@/views/LinesView.vue') },
-    { path: p('line', '/lines/:shortName'), name: 'line', component: () => import('@/views/LineView.vue') },
+    // :agencyId disambiguates two different agencies reusing the same
+    // shortName (e.g. a bus line and a metro line both numbered "4") - see
+    // useNavigation's openLine() and useAgencies' UNKNOWN_AGENCY.
+    { path: p('line', '/lines/:agencyId/:shortName'), name: 'line', component: () => import('@/views/LineView.vue') },
     { path: p('favorites', '/favorites'), name: 'favorites', component: () => import('@/views/FavorisView.vue') },
     { path: p('settings', '/settings'), name: 'settings', component: () => import('@/views/SettingsView.vue') },
     { path: p('help', '/help'), name: 'help', component: () => import('@/views/HelpView.vue') },

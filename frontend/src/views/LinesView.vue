@@ -192,7 +192,7 @@ function setTab(map: boolean) {
 // the two would otherwise compete for the same gesture.
 function onRowClick(route: Route) {
   if (!showMap.value) {
-    openLine(route.shortName)
+    openLine(route.shortName, route.agencyId)
     return
   }
   // While "near me" is framing the user's surroundings, picking a line from

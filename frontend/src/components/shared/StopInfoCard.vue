@@ -3,7 +3,7 @@ import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StopRow from '@/components/shared/StopRow.vue'
 import LineScheduleModal from '@/components/shared/LineScheduleModal.vue'
-import { useStopDetail } from '@/composables/useRouting'
+import { useStopDetail, groupStopLines } from '@/composables/useRouting'
 import { useUpcomingDepartures } from '@/composables/useUpcomingDepartures'
 import { useFavoritesStore } from '@/stores/favorites'
 import { lineKey } from '@/composables/useAgencies'
@@ -66,13 +66,18 @@ function selectLine(line: StopLine) {
   if (line.hasFixedSchedule) {
     scheduleFor.value = line
   } else {
-    openLine(line.shortName)
+    openLine(line.shortName, line.agencyId)
   }
 }
 
 const distanceLabel = computed(() =>
   props.stop.distanceMeters != null ? formatDistance(props.stop.distanceMeters) : null,
 )
+
+// One row per line, not per direction - see groupStopLines's own doc
+// comment for why (a stop can genuinely have more than one boardable
+// direction of the same line, e.g. a dual-origin terminus).
+const groupedLines = computed(() => groupStopLines(lines.value))
 </script>
 
 <template>
@@ -110,11 +115,12 @@ const distanceLabel = computed(() =>
       <p v-else-if="lines.length === 0" class="status-text">{{ t('common.noLines') }}</p>
       <div v-else class="lines-list">
         <StopRow
-          v-for="line in lines"
-          :key="`${lineKey(line.agencyId, line.shortName)}:${line.headsign ?? ''}`"
-          :line="line"
-          :departures="departuresByLine[line.shortName]"
-          @select="selectLine(line)"
+          v-for="group in groupedLines"
+          :key="`${lineKey(group.line.agencyId, group.line.shortName)}:${group.line.headsign ?? ''}`"
+          :line="group.line"
+          :destination-label="group.destinationLabel"
+          :departures="departuresByLine[group.line.shortName]"
+          @select="selectLine(group.line)"
         />
       </div>
     </div>

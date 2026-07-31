@@ -42,7 +42,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { colorFor } = useLineColor()
 const shortNameRef = computed(() => props.shortName)
-const { route: line, loading } = useRouteDetail(shortNameRef)
+const agencyIdRef = computed(() => props.agencyId)
+const { route: line, loading } = useRouteDetail(shortNameRef, agencyIdRef)
 
 // Which direction this row's StopLine entry actually matched (see
 // headsign's own doc comment) - falls back to the first direction only if

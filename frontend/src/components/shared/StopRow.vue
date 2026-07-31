@@ -24,6 +24,10 @@ const props = defineProps<{
   // (hasFixedSchedule ones open LineScheduleModal instead, never expand in
   // place), swaps the trailing hint from "View line ⌄" to "Hide line ⌃".
   expanded?: boolean
+  // Overrides the default "→ line.headsign" text - set by groupStopLines
+  // when this line has more than one boardable direction from this stop,
+  // to show all of them instead of just whichever one `line` happens to be.
+  destinationLabel?: string
 }>()
 defineEmits(['select'])
 
@@ -48,7 +52,7 @@ const actionIcon = computed(() => {
     <template #leading>
       <LineBadge :short-name="line.shortName" :agency-id="line.agencyId ?? undefined" />
     </template>
-    <div class="line-name">{{ line.headsign ? `→ ${line.headsign}` : line.longName }}</div>
+    <div class="line-name">{{ destinationLabel ?? (line.headsign ? `→ ${line.headsign}` : line.longName) }}</div>
     <div v-if="hasMultipleAgencies" class="line-agency">{{ line.agencyName }}</div>
     <div v-if="props.departures?.length" class="meta">
       <span class="departures-text">{{ props.departures.join(' · ') }}</span>

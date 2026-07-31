@@ -1,4 +1,5 @@
 import { useRouter } from 'vue-router'
+import { UNKNOWN_AGENCY } from '@/composables/useAgencies'
 
 export function useNavigation() {
   const router = useRouter()
@@ -7,8 +8,13 @@ export function useNavigation() {
     router.push({ name: 'stop', params: { stopId } })
   }
 
-  function openLine(shortName: string) {
-    router.push({ name: 'line', params: { shortName } })
+  // agencyId disambiguates two different agencies reusing the same
+  // shortName (see the router's own comment on the 'line' route) - falls
+  // back to UNKNOWN_AGENCY when the caller doesn't have one (e.g. an old
+  // favorite saved before agencies existed), which useRouteDetail matches
+  // by shortName alone.
+  function openLine(shortName: string, agencyId?: string | null) {
+    router.push({ name: 'line', params: { agencyId: agencyId || UNKNOWN_AGENCY, shortName } })
   }
 
   /**

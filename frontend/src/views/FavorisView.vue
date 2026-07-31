@@ -146,7 +146,7 @@ function openRoute(fav: FavoriteRoute) {
           v-for="line in favLines"
           :key="lineKey(line.agencyId, line.shortName)"
           tag="div"
-          @click="openLine(line.shortName)"
+          @click="openLine(line.shortName, line.agencyId)"
         >
           <template #leading>
             <LineBadge :short-name="line.shortName" :agency-id="line.agencyId" />

@@ -97,7 +97,17 @@ async function fetchStopFromData(
   const matchingLines = new Map<string, StopLine>()
   for (const route of routesData) {
     for (const dir of route.directions) {
-      if (!dir.stops.some((s) => s.id === stopId)) continue
+      const stopIdx = dir.stops.findIndex((s) => s.id === stopId)
+      if (stopIdx === -1) continue
+      // The last stop of a direction is where that direction's trips end -
+      // nowhere to ride onward to from here. Common at a shared terminus
+      // (the same physical stop is the last stop of one direction and the
+      // first stop of the other, e.g. a line's own turnaround point), which
+      // would otherwise list the same line twice at that one stop: once for
+      // the direction you can actually board, once for the one that just
+      // dropped you off there. Doesn't affect an ordinary stop, which is
+      // never any direction's last stop to begin with.
+      if (stopIdx === dir.stops.length - 1) continue
       const key = `${lineKey(route.agencyId, route.shortName)}:${dir.headsign ?? ''}`
       // Prefer this line's own computed headway (real per-line data, see
       // RouteDirection.frequencyPeriods) over the city-wide default -
@@ -170,6 +180,51 @@ export function useStopDetail() {
   }
 
   return { stop, lines, nearbyStops, loading, error, fetchStop }
+}
+
+export interface GroupedStopLine {
+  // The direction StopRow's own click acts on (schedule modal / inline
+  // accordion) - always a real single direction, never the combined label
+  // below, since LineStopsAccordion matches on an exact headsign.
+  line: StopLine
+  // Set only when this line has more than one boardable direction from this
+  // stop (see groupStopLines) - overrides StopRow's default "→ headsign"
+  // text with all of them joined, instead of silently picking one.
+  destinationLabel?: string
+}
+
+/**
+ * Collapses fetchStopFromData's one-entry-per-boardable-direction list down
+ * to one entry per line (shortName+agencyId) - a stop showing "5" twice
+ * because both of its directions can genuinely be boarded there (a rare
+ * dual-origin case; the far more common case, a shared terminus, is already
+ * filtered out upstream in fetchStopFromData) still reads as one line, not
+ * two unrelated-looking rows. For a fixed-schedule line this loses nothing:
+ * LineScheduleModal/useLineStopSchedule already fetch by (stopId,
+ * shortName) alone, not per-direction, so its departures list is already
+ * merged across every boardable direction regardless of which one's
+ * `line.headsign` gets passed through. For a frequency-based line, there's
+ * no such merged source of truth, so the direction with the lowest
+ * headwayMin (arrives most often) becomes the representative one.
+ */
+export function groupStopLines(lines: StopLine[]): GroupedStopLine[] {
+  const groups = new Map<string, StopLine[]>()
+  for (const line of lines) {
+    const key = lineKey(line.agencyId, line.shortName)
+    const group = groups.get(key)
+    if (group) group.push(line)
+    else groups.set(key, [line])
+  }
+
+  return Array.from(groups.values(), (group): GroupedStopLine => {
+    if (group.length === 1) return { line: group[0] }
+
+    const representative = group[0].hasFixedSchedule
+      ? group[0]
+      : group.reduce((soonest, l) => (l.headwayMin ?? Infinity) < (soonest.headwayMin ?? Infinity) ? l : soonest)
+    const destinationLabel = `→ ${group.map((l) => l.headsign ?? l.longName).join(' · ')}`
+    return { line: representative, destinationLabel }
+  })
 }
 
 // ── Offline routing (Minotor RAPTOR) ──────────────────────────────────────
