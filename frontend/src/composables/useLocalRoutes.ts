@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import { loadCityRoutes } from '@/services/cityData'
+import { loadCityRoutes, loadCityRoutesMeta } from '@/services/cityData'
 import { useCityStore } from '@/stores/city'
 import type { Route } from '@/types'
 
@@ -16,6 +16,31 @@ export function useRoutesList() {
     (slug) => {
       loading.value = true
       loadCityRoutes(slug).then((data) => {
+        routes.value = data
+        loading.value = false
+      })
+    },
+    { immediate: true },
+  )
+
+  return { routes, loading }
+}
+
+/** Same shape as useRoutesList(), backed by routes-meta.json instead of the
+ * full routes.json (no geometry, a fraction of the payload) - for callers
+ * that only need per-route fields like `mode` (see useTransitModeFilter's
+ * internal fallback) and would otherwise pull the full geometry across the
+ * network for nothing. */
+export function useRoutesMetaList() {
+  const city = useCityStore()
+  const routes = ref<Route[]>([])
+  const loading = ref(true)
+
+  watch(
+    () => city.activeSlug,
+    (slug) => {
+      loading.value = true
+      loadCityRoutesMeta(slug).then((data) => {
         routes.value = data
         loading.value = false
       })

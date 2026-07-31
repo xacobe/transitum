@@ -52,6 +52,11 @@ const restWords = computed(() => APP_NAME.split(' ').slice(1).join(' '))
 .logo-icon {
   width: auto;
   height: 28px;
+  /* Reserves the icon's box before it loads (avoids a layout shift) -
+     matches the framework's own default logo/icon.svg (viewBox 0 0 100
+     120). A deployment shipping a differently-shaped icon via
+     VITE_APP_ICON can override this to match its own aspect ratio. */
+  aspect-ratio: var(--logo-icon-ratio, 100 / 120);
   flex: none;
   display: block;
 }

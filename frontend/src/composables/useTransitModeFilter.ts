@@ -2,7 +2,7 @@ import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useModeFilterStore } from '@/stores/modeFilter'
 import { useCityStore } from '@/stores/city'
-import { useRoutesList } from '@/composables/useLocalRoutes'
+import { useRoutesMetaList } from '@/composables/useLocalRoutes'
 import type { Route, Stop, TransitMode } from '@/types'
 
 // Fixed display order - bus, metro, tram, rail first (the modes most
@@ -19,12 +19,15 @@ const MODE_ORDER: TransitMode[] = [
  * results) without threading state through props.
  *
  * @param routesRef - reuse an already-loaded routes list (e.g. LinesView's
- *   own useRoutesList()) to avoid a second fetch; omit to load one internally.
+ *   own useRoutesList()) to avoid a second fetch; omit to load one
+ *   internally - only `route.mode` is ever read here, so that internal
+ *   load goes through routes-meta.json (useRoutesMetaList), not the full
+ *   routes.json with every line's geometry.
  */
 export function useTransitModeFilter(routesRef?: Ref<Route[]>) {
   const city = useCityStore()
   const store = useModeFilterStore()
-  const { routes } = routesRef ? { routes: routesRef } : useRoutesList()
+  const { routes } = routesRef ? { routes: routesRef } : useRoutesMetaList()
 
   watch(() => city.activeSlug, (slug) => store.ensureCity(slug), { immediate: true })
 
