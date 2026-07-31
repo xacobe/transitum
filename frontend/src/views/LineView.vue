@@ -215,6 +215,8 @@ function toggleFavorite() {
 </template>
 
 <style scoped>
+@import '@/components/shared/stopRail.css';
+
 .fav-btn {
   flex: none;
 }
@@ -277,29 +279,11 @@ function toggleFavorite() {
   margin-bottom: 10px;
 }
 
-.stops-list {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 0 14px;
-}
-
+/* .stop-row's own base look (position/rail/border-bottom/::before/etc.) is
+   shared - see stopRail.css. Everything below is specific to this page's
+   selection model (MapStopPanel), not the accordion's. */
 .stop-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
   transition: opacity .15s ease, background-color .15s ease;
-}
-
-.stop-row:last-child {
-  border-bottom: none;
 }
 
 /* Points at whichever stop MapStopPanel is currently open for - set from
@@ -312,53 +296,6 @@ function toggleFavorite() {
 
 .stops-list.has-selected .stop-row:not(.selected) {
   opacity: .45;
-}
-
-/* The connecting line lives on .stop-row (not .rail): .rail's own content
-   box is only ever as tall as the 26px dot, so top:0/bottom:0 there can
-   never reach into the row's padding to meet the next row's line. Anchored
-   to the row's own (padding-included) box, top:0/bottom:0 always spans
-   edge-to-edge, so consecutive rows' lines touch and read as one line. */
-.stop-row::before {
-  content: '';
-  position: absolute;
-  top: -.8rem;
-  bottom: 0;
-  left: 11.5px;
-  width: 3px;
-  background: var(--line-color);
-}
-
-.rail {
-  position: relative;
-  width: 26px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stop-row.first::before {
-  top: 24px;
-}
-
-.stop-row.last::before {
-  bottom: 24px;
-}
-
-.dot-index {
-  position: relative;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--line-color);
-  color: var(--line-text);
-  font: 700 12px var(--font-figures);
 }
 
 .stop-content {

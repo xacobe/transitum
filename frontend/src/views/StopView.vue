@@ -8,7 +8,6 @@ import ListRow from '@/components/shared/ListRow.vue'
 import ServiceClosedNotice from '@/components/shared/ServiceClosedNotice.vue'
 import RowActionHint from '@/components/shared/RowActionHint.vue'
 import { useStopDetail } from '@/composables/useRouting'
-import { useRoutesList } from '@/composables/useLocalRoutes'
 import { useUpcomingDepartures } from '@/composables/useUpcomingDepartures'
 import { useFrequency } from '@/composables/useFrequency'
 import { useFavoritesStore } from '@/stores/favorites'
@@ -42,10 +41,6 @@ const { stop, lines, nearbyStops, loading, error, fetchStop } = useStopDetail()
 const { departuresByLine, load: loadDepartures } = useUpcomingDepartures()
 const favorites = useFavoritesStore()
 const city = useCityStore()
-// Only used for the expanded line's geometry below - routes.json is
-// already cached per city (see loadCityRoutes), so this doesn't duplicate
-// LineStopsAccordion's own fetch of the same data.
-const { routes: allRoutes } = useRoutesList()
 
 const serviceOpen = computed(() => isWithinServiceHours())
 const isOfflineError = useOfflineError(error)
@@ -55,24 +50,12 @@ const stopCenter = computed<[number, number] | undefined>(() =>
 )
 
 // Drawn on the map above once a line is expanded below (see
-// expandedLineKey) - the same direction LineStopsAccordion shows, matched
-// by this StopLine row's own headsign (see its own prop doc comment for
-// why: StopDetail already splits entries per matching direction).
-const expandedLineLegs = computed<MapLeg[]>(() => {
-  if (!expandedLineKey.value) return []
-  const line = lines.value.find((l) => lineRowKey(l) === expandedLineKey.value)
-  if (!line) return []
-  const fullRoute = allRoutes.value.find((r) => r.shortName === line.shortName && r.agencyId === line.agencyId)
-  if (!fullRoute) return []
-  const dir = fullRoute.directions.find((d) => d.headsign === line.headsign) ?? fullRoute.directions[0]
-  if (!dir?.points?.length) return []
-  return [{
-    mode: 'BUS',
-    points: dir.points,
-    routeShortName: fullRoute.shortName,
-    routeAgencyId: fullRoute.agencyId,
-  }]
-})
+// expandedLineKey) - set from LineStopsAccordion's own active-direction
+// event rather than a separate fetch of the whole city's routes.json here:
+// the accordion already loads the one Route this needs, so StopView just
+// reuses it instead of eagerly duplicating that fetch on every stop visit.
+const expandedLineLeg = ref<MapLeg | null>(null)
+const expandedLineLegs = computed<MapLeg[]>(() => (expandedLineLeg.value ? [expandedLineLeg.value] : []))
 
 // Set from LineStopsAccordion's highlight-stop event (a stop picked from
 // the expanded line's own list, not from the map) - drawn on the map above
@@ -81,7 +64,10 @@ const expandedLineLegs = computed<MapLeg[]>(() => {
 // there, purely so MiniMap's own by-id lookup (shared with every other
 // mode) has something to find.
 const highlightedAccordionStop = ref<Stop | null>(null)
-watch(expandedLineKey, () => { highlightedAccordionStop.value = null })
+watch(expandedLineKey, () => {
+  highlightedAccordionStop.value = null
+  expandedLineLeg.value = null
+})
 const mapStops = computed(() =>
   highlightedAccordionStop.value ? [...nearbyStops.value, highlightedAccordionStop.value] : nearbyStops.value,
 )
@@ -94,12 +80,12 @@ onMounted(load)
 watch(() => route.params.stopId, () => {
   load()
   // Navigating to a different stop (e.g. "View stop" from the accordion)
-  // closes whatever line was expanded here - otherwise it'd keep showing
-  // the previous stop's accordion state, which is confusing since the user
-  // just changed stops (per line-key coincidence it might not even match
-  // any line on the new stop). Makes the stop change itself unambiguous.
+  // closes whatever line was expanded here (which in turn resets
+  // highlightedAccordionStop/expandedLineLeg too, see the watch on this
+  // just below) - otherwise it'd keep showing the previous stop's
+  // accordion state, confusing since the user just changed stops (per
+  // line-key coincidence it might not even match any line on the new one).
   expandedLineKey.value = null
-  highlightedAccordionStop.value = null
 })
 watch(stop, () => {
   if (stop.value?.name) track('stop-viewed', { name: stop.value.name, city: city.activeSlug })
@@ -228,6 +214,7 @@ function goBack() {
             :current-stop-id="stopId"
             @view-stop="openStop"
             @highlight-stop="highlightedAccordionStop = $event"
+            @active-direction="expandedLineLeg = $event"
           />
         </template>
 

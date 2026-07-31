@@ -1,0 +1,82 @@
+/* Shared visual shell for a numbered stop list: a bordered card
+   (.stops-list) of rows (.stop-row), each with a connecting rail
+   (.rail/.dot-index) and a colored line running through it
+   (--line-color/--line-text, set by the caller). Used by both LineView.vue
+   (the full line detail page) and LineStopsAccordion.vue (the inline
+   preview embedded in StopView) - imported via @import into each
+   component's own <style scoped> block, so it's scoped per-component like
+   any other rule there, but defined once. Only the shared shell lives
+   here; each caller keeps its own selection-state rules (.selected vs.
+   .current/.highlighted, dimming opacity, transitions, trailing content)
+   since those genuinely differ between the two. */
+
+.stops-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0 14px;
+}
+
+.stop-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.stop-row:last-child {
+  border-bottom: none;
+}
+
+/* The connecting line lives on .stop-row (not .rail): .rail's own content
+   box is only ever as tall as the 26px dot, so top:0/bottom:0 there can
+   never reach into the row's padding to meet the next row's line. Anchored
+   to the row's own (padding-included) box, top:0/bottom:0 always spans
+   edge-to-edge, so consecutive rows' lines touch and read as one line. */
+.stop-row::before {
+  content: '';
+  position: absolute;
+  top: -.8rem;
+  bottom: 0;
+  left: 11.5px;
+  width: 3px;
+  background: var(--line-color);
+}
+
+.stop-row.first::before {
+  top: 24px;
+}
+
+.stop-row.last::before {
+  bottom: 24px;
+}
+
+.rail {
+  position: relative;
+  width: 26px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot-index {
+  position: relative;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--line-color);
+  color: var(--line-text);
+  font: 700 12px var(--font-figures);
+}

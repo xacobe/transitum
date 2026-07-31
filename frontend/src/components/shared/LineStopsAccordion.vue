@@ -3,8 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouteDetail } from '@/composables/useLocalRoutes'
 import { useLineColor } from '@/composables/useLineColor'
+import { toMapLeg } from '@/map/geometry'
 import RowActionHint from './RowActionHint.vue'
-import type { Stop } from '@/types'
+import type { MapLeg, Stop } from '@/types'
 
 // Inline preview for a frequency-based line clicked from StopView's "Lines
 // passing here" list - the same stop-sequence list as the full line view
@@ -31,6 +32,11 @@ const emit = defineEmits<{
   // has no other list this stop is guaranteed to already be in (unlike
   // nearbyStops) to look it up from - see StopView's mapStops.
   'highlight-stop': [stop: Stop | null]
+  // The currently shown direction's own line, for StopView's map to draw -
+  // this component already has the full Route loaded (via useRouteDetail),
+  // so StopView reuses it here instead of eagerly fetching the whole
+  // city's routes.json itself just to look the same one back up.
+  'active-direction': [leg: MapLeg | null]
 }>()
 
 const { t } = useI18n()
@@ -38,14 +44,19 @@ const { colorFor } = useLineColor()
 const shortNameRef = computed(() => props.shortName)
 const { route: line, loading } = useRouteDetail(shortNameRef)
 
-const directionIndex = ref(0)
-watch(line, (l) => {
-  const idx = l?.directions.findIndex((d) => d.headsign === props.headsign) ?? -1
-  directionIndex.value = idx >= 0 ? idx : 0
+// Which direction this row's StopLine entry actually matched (see
+// headsign's own doc comment) - falls back to the first direction only if
+// that match fails to find one, which shouldn't happen in practice.
+const directionIndex = computed(() => {
+  const idx = line.value?.directions.findIndex((d) => d.headsign === props.headsign) ?? -1
+  return idx >= 0 ? idx : 0
 })
-
 const activeDirection = computed(() => line.value?.directions[directionIndex.value] ?? null)
 const lineColor = computed(() => colorFor(props.shortName, line.value?.agencyId ?? props.agencyId))
+
+watch(activeDirection, (dir) => {
+  emit('active-direction', dir?.points?.length && line.value ? toMapLeg(line.value, dir) : null)
+})
 
 // A stop tapped in this list, other than currentStopId - marks it as
 // selected in place (same highlight treatment as currentStopId) and
@@ -121,6 +132,8 @@ function toggleHighlight(id: string) {
 </template>
 
 <style scoped>
+@import '@/components/shared/stopRail.css';
+
 .accordion-panel {
   padding: 4px 0 var(--space-3);
 }
@@ -131,31 +144,11 @@ function toggleHighlight(id: string) {
   font: var(--text-label);
 }
 
-.stops-list {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 0 14px;
-}
+/* .stop-row's own base look (position/rail/border-bottom/::before/etc.) is
+   shared - see stopRail.css. Everything below is specific to this
+   in-place toggle model, not LineView's MapStopPanel-based one.
 
-.stop-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-}
-
-.stop-row:last-child {
-  border-bottom: none;
-}
-
-/* .current: the stop this accordion was opened from, always shown this
+   .current: the stop this accordion was opened from, always shown this
    way, not clickable (:disabled) - tapping the stop already being viewed
    would just navigate to itself. .highlighted: a stop tapped to preview
    (see toggleHighlight) - same treatment, but clickable (to deselect) and
@@ -179,48 +172,6 @@ function toggleHighlight(id: string) {
    once a stop is picked on its map. */
 .stop-row:not(.current):not(.highlighted) {
   opacity: .55;
-}
-
-.stop-row::before {
-  content: '';
-  position: absolute;
-  top: -.8rem;
-  bottom: 0;
-  left: 11.5px;
-  width: 3px;
-  background: var(--line-color);
-}
-
-.stop-row.first::before {
-  top: 24px;
-}
-
-.stop-row.last::before {
-  bottom: 24px;
-}
-
-.rail {
-  position: relative;
-  width: 26px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dot-index {
-  position: relative;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--line-color);
-  color: var(--line-text);
-  font: 700 12px var(--font-figures);
 }
 
 .stop-name {

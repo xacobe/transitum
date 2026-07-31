@@ -183,9 +183,9 @@ function toStopFeature(
     geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
     properties: {
       id: s.id ?? '', name: s.name ?? '', lat: s.lat, lon: s.lon, color,
-      // Only STOPS_POINT_LAYER (search mode) actually reads 'icon'/'selected'/
-      // 'anySelected' - harmless on the other sources' circle-type layers,
-      // which ignore them.
+      // Only the icon symbol layers (STOPS_POINT_LAYER/STOPS_NETWORK_LAYER)
+      // actually read 'icon'/'selected'/'anySelected' - harmless on the
+      // other sources' circle-type layers, which ignore them.
       icon: stopIconImg(pickStopIconMode(s.modes)),
       selected: s.id != null && s.id === props.selectedStopId ? 1 : 0,
       anySelected: props.selectedStopId ? 1 : 0,
@@ -243,65 +243,56 @@ function stopDotColor() {
 }
 
 // ── Stop rendering ─────────────────────────────────────────────────────────
+// Every mode clears the stop sources it doesn't use and populates the ones
+// it does - building the full set here (defaulted empty) and writing it out
+// in one loop means a mode branch only ever states what it actually draws,
+// and a future stop source needs one new default entry, not a new line in
+// every existing branch.
 function renderStops() {
   if (!map || !styleReady) return
 
   clearMarkers()
   renderFromTo()
 
-  // route mode: intermediate stops as unclustered GL circles + sequence numbers.
-  // Endpoints keep their HTML markers (pulsing dot + pin from renderFromTo).
+  const sources: Record<string, Feature[]> = {
+    [STOPS_SOURCE]: [],
+    [STOPS_MAP_SOURCE]: [],
+    [STOPS_NETWORK_SOURCE]: [],
+    [NEARBY_STOPS_SOURCE]: [],
+  }
+
   if (props.mode === 'route') {
+    // Intermediate stops as unclustered GL circles + sequence numbers.
+    // Endpoints keep their HTML markers (pulsing dot + pin from renderFromTo).
     const color = stopDotColor().bg
     const n = props.stops.length
-    setSourceData(STOPS_SOURCE,
-      props.stops
-        .filter((_, i) => i !== 0 && i !== n - 1)
-        .map((s, i) => toStopFeature(s, color, { seq: String(i + 2) })),
-    )
-    setSourceData(STOPS_MAP_SOURCE, [])
-    setSourceData(STOPS_NETWORK_SOURCE, [])
-    return
-  }
-
-  // network mode: highlighted line stops as unclustered GL circles, plus
-  // every city stop as an unclustered background layer (STOPS_NETWORK_SOURCE,
-  // not the clustered STOPS_MAP_SOURCE search mode uses) - invisible zoomed
-  // out over most of the city, mode icons appear directly past its minzoom,
-  // no cluster-bubble step in between (see overlayLayers.ts).
-  if (props.mode === 'network') {
+    sources[STOPS_SOURCE] = props.stops
+      .filter((_, i) => i !== 0 && i !== n - 1)
+      .map((s, i) => toStopFeature(s, color, { seq: String(i + 2) }))
+  } else if (props.mode === 'network') {
+    // Highlighted line stops as unclustered GL circles, plus every city
+    // stop as an unclustered background layer (STOPS_NETWORK_SOURCE, not
+    // the clustered STOPS_MAP_SOURCE search mode uses) - invisible zoomed
+    // out over most of the city, mode icons appear directly past its
+    // minzoom, no cluster-bubble step in between (see overlayLayers.ts).
     const color = stopDotColor().bg
-    setSourceData(STOPS_SOURCE, props.stops.map((s) => toStopFeature(s, color)))
-    setSourceData(STOPS_NETWORK_SOURCE, props.cityStops.map((s) => toStopFeature(s, stopColor())))
-    setSourceData(STOPS_MAP_SOURCE, [])
-    return
+    sources[STOPS_SOURCE] = props.stops.map((s) => toStopFeature(s, color))
+    sources[STOPS_NETWORK_SOURCE] = props.cityStops.map((s) => toStopFeature(s, stopColor()))
+  } else if (props.mode === 'search') {
+    // All city stops via the clustered GL source. Clustering is handled
+    // natively by MapLibre — no per-feature JS needed.
+    sources[STOPS_MAP_SOURCE] = props.stops.map((s) => toStopFeature(s, stopColor()))
+  } else if (props.mode === 'stop') {
+    // The current stop is the single HTML marker already placed by
+    // renderFromTo(); nearby stops (props.stops, if passed) are small muted
+    // bus-stop icons (see overlayLayers) - a quick spatial hint, not meant
+    // to compete with the main marker.
+    sources[NEARBY_STOPS_SOURCE] = props.stops.map((s) => toStopFeature(s, ''))
   }
 
-  // search mode: all city stops via the clustered GL source.
-  // Clustering is handled natively by MapLibre — no per-feature JS needed.
-  if (props.mode === 'search') {
-    setSourceData(STOPS_SOURCE, [])
-    setSourceData(STOPS_MAP_SOURCE, props.stops.map((s) => toStopFeature(s, stopColor())))
-    setSourceData(STOPS_NETWORK_SOURCE, [])
-    return
+  for (const [sourceId, features] of Object.entries(sources)) {
+    setSourceData(sourceId, features)
   }
-
-  // stop mode: the current stop is the single HTML marker already placed by
-  // renderFromTo(); nearby stops (props.stops, if passed) are small muted
-  // bus-stop icons (see overlayLayers) - a quick spatial hint, not meant to
-  // compete with the main marker.
-  if (props.mode === 'stop') {
-    setSourceData(NEARBY_STOPS_SOURCE, props.stops.map((s) => toStopFeature(s, '')))
-    setSourceData(STOPS_SOURCE, [])
-    setSourceData(STOPS_MAP_SOURCE, [])
-    setSourceData(STOPS_NETWORK_SOURCE, [])
-    return
-  }
-
-  setSourceData(NEARBY_STOPS_SOURCE, [])
-  setSourceData(STOPS_SOURCE, [])
-  setSourceData(STOPS_MAP_SOURCE, [])
-  setSourceData(STOPS_NETWORK_SOURCE, [])
 }
 
 // Search mode: one-shot "appear" burst behind the selected stop's own icon
@@ -366,27 +357,27 @@ function startSelectedStopHalo(stop: { id?: string; name?: string; lat: number; 
 function updateSelectedStopMarker() {
   selectedStopMarker?.remove()
   selectedStopMarker = null
-  if (!map || !styleReady || !props.selectedStopId) {
-    lastSelectedStopKey = null
-    stopSelectedHalo()
-    return
-  }
+
   // Network mode's own `stops` prop is only ever the highlighted line's
   // stops (or empty) - a stop picked from the city-wide background layer
   // (cityStops) needs its own fallback lookup there.
-  const stop = props.stops.find((s) => s.id === props.selectedStopId)
-    ?? props.cityStops.find((s) => s.id === props.selectedStopId)
-  if (!stop) {
+  const stop = props.selectedStopId
+    ? props.stops.find((s) => s.id === props.selectedStopId)
+      ?? props.cityStops.find((s) => s.id === props.selectedStopId)
+    : undefined
+  if (!map || !styleReady || !stop) {
     lastSelectedStopKey = null
     stopSelectedHalo()
     return
   }
 
-  if (props.mode === 'search' || props.mode === 'network' || props.mode === 'stop') {
+  // route mode keeps the pulsing HTML marker below; every other mode (and
+  // any future one) gets the GL halo/enlarge treatment.
+  if (props.mode !== 'route') {
     // Only replay the burst when the selection actually changed - this runs
     // on every render() cycle (any prop change), not just an actual pick.
     if (props.selectedStopId !== lastSelectedStopKey) {
-      lastSelectedStopKey = props.selectedStopId
+      lastSelectedStopKey = props.selectedStopId ?? null
       startSelectedStopHalo(stop)
     }
     return
@@ -778,11 +769,22 @@ onUnmounted(() => {
 watch(
   () => [
     props.mode, props.center, props.from, props.to,
-    props.routeLegs, props.stops, props.cityStops, props.highlightedKey,
+    props.routeLegs, props.stops, props.highlightedKey,
     props.userPosition, props.pickedPoint,
   ],
   () => { if (styleReady) render() },
   { deep: true },
+)
+
+// cityStops (network mode's city-wide background layer) is its own,
+// shallow watcher: it's always reassigned wholesale (see LinesView's
+// filteredCityStops), never mutated in place, and can be 1,000+ stops -
+// deep-diffing every one of them on each render just to detect the same
+// "did the reference change" signal a shallow watch gives for free would
+// be pure overhead at that size.
+watch(
+  () => props.cityStops,
+  () => { if (styleReady) render() },
 )
 
 // Deliberately its own watcher, not folded into the one above - see

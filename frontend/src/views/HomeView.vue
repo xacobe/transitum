@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { buildResultsQuery } from '@/services/resultsQuery'
+import { toMapLeg } from '@/map/geometry'
 import type { NamedPosition, MapLeg } from '@/types'
 import SettingsButton from '@/components/shared/SettingsButton.vue'
 import MiniMap from '@/components/map/MiniMap.vue'
@@ -100,36 +101,39 @@ const allRoutesLegs = computed<MapLeg[]>(() =>
   allRoutes.value.filter(matchesFilter).flatMap((route): MapLeg[] => {
     const dir = route.directions[0]
     if (!dir?.points?.length) return []
-    return [{
-      mode: 'BUS',
-      points: dir.points,
-      routeShortName: route.shortName,
-      routeAgencyId: route.agencyId,
-    }]
+    return [toMapLeg(route, dir)]
   }),
 )
 const mapRouteLegs = computed(() => (showRoutes.value ? allRoutesLegs.value : selectedStopLegs.value))
+
+// stop id -> legs of every direction passing through it, built once per
+// allRoutes load rather than rescanning every route/direction on each stop
+// tap (selectedStopLegs below used to do exactly that scan per tap - a
+// full-network scan on the main thread every time a stop preview opens).
+const legsByStopId = computed(() => {
+  const index = new Map<string, MapLeg[]>()
+  for (const route of allRoutes.value) {
+    for (const dir of route.directions) {
+      if (!dir.points?.length) continue
+      const leg = toMapLeg(route, dir)
+      for (const s of dir.stops) {
+        const legs = index.get(s.id)
+        if (legs) legs.push(leg)
+        else index.set(s.id, [leg])
+      }
+    }
+  }
+  return index
+})
 
 // Lines serving the currently previewed stop, drawn on the map the same way
 // LinesView highlights a line - lets a rider see where each of a stop's
 // lines actually goes without leaving the map. A stop can appear in more
 // than one direction of the same route (both sides of an out-and-back line
 // sharing one platform) - each matching direction gets its own leg.
-const selectedStopLegs = computed<MapLeg[]>(() => {
-  if (!selectedStop.value) return []
-  const stopId = selectedStop.value.id
-  return allRoutes.value.flatMap((route) =>
-    route.directions.flatMap((dir): MapLeg[] => {
-      if (!dir.points?.length || !dir.stops.some((s) => s.id === stopId)) return []
-      return [{
-        mode: 'BUS',
-        points: dir.points,
-        routeShortName: route.shortName,
-        routeAgencyId: route.agencyId,
-      }]
-    }),
-  )
-})
+const selectedStopLegs = computed<MapLeg[]>(() =>
+  selectedStop.value ? legsByStopId.value.get(selectedStop.value.id) ?? [] : [],
+)
 
 // Show notification when the initial geolocation on mount fails with PERMISSION_DENIED
 watch(geoErrorCode, (code) => {

@@ -5,6 +5,7 @@
  * MapLibre and GeoJSON use [lon, lat]. Always convert at the boundary.
  */
 import { latLonBounds } from '@/services/geo'
+import type { MapLeg, Route, RouteDirection } from '@/types'
 
 export type LatLon = [number, number]
 
@@ -18,6 +19,21 @@ export function pointsToCoords(points: LatLon[]): [number, number][] {
 export function latLonArrayToBounds(points: LatLon[]): [[number, number], [number, number]] {
   const { minLat, maxLat, minLon, maxLon } = latLonBounds(points)
   return [[minLon, minLat], [maxLon, maxLat]]
+}
+
+/** The base MapLeg shape every "draw this line on the map" call site needs
+ * (route id + one direction's own points) - callers add their own extras
+ * (dashed, key, ...) with a spread where needed. */
+export function toMapLeg(
+  route: Pick<Route, 'shortName' | 'agencyId'>,
+  dir: Pick<RouteDirection, 'points'>,
+): MapLeg {
+  return {
+    mode: 'BUS',
+    points: dir.points,
+    routeShortName: route.shortName,
+    routeAgencyId: route.agencyId,
+  }
 }
 
 /**

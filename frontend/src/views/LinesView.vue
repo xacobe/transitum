@@ -17,6 +17,7 @@ import { useCityStore } from '@/stores/city'
 import { useNavigation } from '@/composables/useNavigation'
 import { useAgencies, lineKey, routeIdentity } from '@/composables/useAgencies'
 import { haversineMeters } from '@/services/geo'
+import { toMapLeg } from '@/map/geometry'
 import { track } from '@/composables/useAnalytics'
 import { IconStar, IconStarFilled, IconCurrentLocation, IconMap } from '@tabler/icons-vue'
 import type { Route } from '@/types'
@@ -128,14 +129,7 @@ const mapLegs = computed(() =>
     const dirs = key === highlightedKey.value ? route.directions : route.directions.slice(0, 1)
     return dirs.flatMap((dir, i) => {
       if (!dir.points || dir.points.length === 0) return []
-      return [{
-        mode: 'BUS' as const,
-        points: dir.points,
-        routeShortName: route.shortName,
-        routeAgencyId: route.agencyId,
-        key,
-        dashed: i > 0,
-      }]
+      return [{ ...toMapLeg(route, dir), key, dashed: i > 0 }]
     })
   }),
 )
